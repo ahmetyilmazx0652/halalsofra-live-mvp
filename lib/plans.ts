@@ -4,14 +4,16 @@ export const plans = [
     name: "Ücretsiz",
     price: "€0",
     description: "Temel görünürlük",
-    features: ["Restoran adı, adres, telefon", "Şehir listesinde görünme", "Admin onay süreci"]
+    features: ["Restoran adı, adres, telefon", "Şehir listesinde görünme", "Admin onay süreci"],
+    recommended: false
   },
   {
     id: "basic",
     name: "Basic",
     price: "€9",
     description: "Menü ve fotoğraf",
-    features: ["Menü ve fiyatlar", "5 fotoğraf", "Çalışma saatleri"]
+    features: ["Menü ve fiyatlar", "5 fotoğraf", "Çalışma saatleri"],
+    recommended: false
   },
   {
     id: "pro",
@@ -26,6 +28,7 @@ export const plans = [
     name: "Premium",
     price: "€39",
     description: "Büyüme paketi",
-    features: ["Öne çıkarma", "Kampanya", "Çoklu şube", "Gelişmiş analytics"]
+    features: ["Öne çıkarma", "Kampanya", "Çoklu şube", "Gelişmiş analytics"],
+    recommended: false
   }
 ] as const;
