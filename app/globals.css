@@ -211,6 +211,19 @@ textarea {
   border-color: var(--gold);
 }
 
+.empty-state {
+  margin-top: 20px;
+  padding: 28px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+}
+
+.empty-state h2 {
+  margin-bottom: 8px;
+}
+
 @media (max-width: 800px) {
   .hero,
   .filters,

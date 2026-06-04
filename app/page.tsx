@@ -1,6 +1,11 @@
-import { demoCountries, demoRestaurants } from "@/lib/demo-data";
+import { getHomeData } from "@/lib/home-data";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const { countries, restaurants, stats, source } = await getHomeData();
+  const firstCountryCities = countries[0]?.cities ?? [];
+
   return (
     <main className="page">
       <section className="hero">
@@ -13,35 +18,36 @@ export default function HomePage() {
           </p>
           <div className="filters">
             <select aria-label="Ülke">
-              {demoCountries.map((country) => (
+              {countries.map((country) => (
                 <option key={country.id}>{country.flag} {country.name}</option>
               ))}
             </select>
             <select aria-label="Şehir">
-              {demoCountries[0].cities.map((city) => (
+              {firstCountryCities.map((city) => (
                 <option key={city}>{city}</option>
               ))}
             </select>
             <input aria-label="Arama" placeholder="Restoran, yemek veya adres ara" />
           </div>
           <div className="stats">
-            <div className="stat"><strong>384</strong><span>başlangıç kaydı</span></div>
-            <div className="stat"><strong>99</strong><span>şehir</span></div>
-            <div className="stat"><strong>4</strong><span>abonelik paketi</span></div>
+            <div className="stat"><strong>{stats.restaurants}</strong><span>{source === "supabase" ? "canlı restoran" : "başlangıç kaydı"}</span></div>
+            <div className="stat"><strong>{stats.cities}</strong><span>şehir</span></div>
+            <div className="stat"><strong>{stats.plans}</strong><span>abonelik paketi</span></div>
           </div>
         </div>
         <div className="panel">
           <h2>Canlı MVP durumu</h2>
           <p className="muted">
-            Bu sayfa Supabase bağlanınca canlı restoran verisini okuyacak.
-            Şimdilik lansman iskeleti demo verilerle gösteriliyor.
+            {source === "supabase"
+              ? "Supabase bağlantısı aktif. Yayındaki restoranlar veritabanından okunuyor."
+              : "Supabase ayarları bekleniyor. Şimdilik lansman iskeleti demo verilerle gösteriliyor."}
           </p>
           <a className="button primary" href="/owner">İşletme olarak başla</a>
         </div>
       </section>
 
       <section className="grid">
-        {demoRestaurants.map((restaurant) => (
+        {restaurants.map((restaurant) => (
           <article className={`card ${restaurant.featured ? "featured" : ""}`} key={restaurant.id}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <span className="pill">Grade {restaurant.grade}</span>
@@ -50,10 +56,24 @@ export default function HomePage() {
             <h3>{restaurant.name}</h3>
             <p className="muted">{restaurant.country} · {restaurant.city}</p>
             <p>{restaurant.address}</p>
-            <p><strong>★ {restaurant.rating}</strong> · {restaurant.cuisine} · {restaurant.price}</p>
+            <p>
+              {restaurant.rating ? <><strong>★ {restaurant.rating}</strong> · </> : null}
+              {restaurant.cuisine} · {restaurant.price}
+            </p>
           </article>
         ))}
       </section>
+
+      {restaurants.length === 0 ? (
+        <section className="empty-state">
+          <span className="pill">Veritabanı hazır</span>
+          <h2>Henüz yayınlanmış restoran yok.</h2>
+          <p className="muted">
+            Admin onaylı restoranlar eklendiğinde burada gerçek canlı veriler görünecek.
+          </p>
+          <a className="button primary" href="/owner">İlk restoran başvurusunu oluştur</a>
+        </section>
+      ) : null}
     </main>
   );
 }
