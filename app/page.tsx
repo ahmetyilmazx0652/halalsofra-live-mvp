@@ -1,8 +1,11 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { getHomeData } from "@/lib/home-data";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function HomePage() {
+  noStore();
   const { countries, restaurants, stats, source, notice } = await getHomeData();
   const firstCountryCities = countries[0]?.cities ?? [];
 
