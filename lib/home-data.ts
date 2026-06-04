@@ -29,7 +29,8 @@ export type HomeData = {
     cities: number;
     plans: number;
   };
-  source: "demo" | "supabase";
+  source: "demo" | "supabase" | "error";
+  notice?: string;
 };
 
 function demoHomeData(): HomeData {
@@ -46,7 +47,8 @@ function demoHomeData(): HomeData {
       cities: cityCount,
       plans: 4
     },
-    source: "demo"
+    source: "demo",
+    notice: "Supabase ortam değişkenleri bulunamadığı için demo veri gösteriliyor."
   };
 }
 
@@ -65,35 +67,51 @@ export async function getHomeData(): Promise<HomeData> {
     supabase.from("cities").select("id,country_id,name").order("name"),
     supabase
       .from("restaurants")
-      .select("id,name,cuisine,address,price_level,halal_grade,is_featured,countries(name),cities(name)")
+      .select("id,name,cuisine,address,price_level,halal_grade,is_featured,country_id,city_id")
       .eq("status", "published")
       .order("is_featured", { ascending: false })
       .order("created_at", { ascending: false })
   ]);
 
   if (countriesResult.error || citiesResult.error || restaurantsResult.error) {
-    return demoHomeData();
+    const message =
+      countriesResult.error?.message ??
+      citiesResult.error?.message ??
+      restaurantsResult.error?.message ??
+      "Supabase verisi okunamadı.";
+    const fallback = demoHomeData();
+    return {
+      ...fallback,
+      source: "error",
+      notice: `Supabase bağlantısı kuruldu ama veri okunamadı: ${message}`
+    };
   }
 
   const citiesByCountry = new Map<string, string[]>();
+  const cityNameById = new Map<string, string>();
   for (const city of citiesResult.data ?? []) {
     const current = citiesByCountry.get(city.country_id) ?? [];
     current.push(city.name);
     citiesByCountry.set(city.country_id, current);
+    cityNameById.set(city.id, city.name);
   }
 
+  const countryNameById = new Map<string, string>();
   const countries = (countriesResult.data ?? []).map((country) => ({
     id: country.id,
     name: country.name,
     flag: country.flag,
     cities: citiesByCountry.get(country.id) ?? []
   }));
+  for (const country of countries) {
+    countryNameById.set(country.id, country.name);
+  }
 
   const restaurants = (restaurantsResult.data ?? []).map((restaurant: any) => ({
     id: restaurant.id,
     name: restaurant.name,
-    country: restaurant.countries?.name ?? "Bilinmiyor",
-    city: restaurant.cities?.name ?? "Bilinmiyor",
+    country: countryNameById.get(restaurant.country_id) ?? "Bilinmiyor",
+    city: cityNameById.get(restaurant.city_id) ?? "Bilinmiyor",
     cuisine: restaurant.cuisine ?? "Restoran",
     grade: restaurant.halal_grade ?? "B",
     price: priceLabel(restaurant.price_level),
@@ -110,6 +128,7 @@ export async function getHomeData(): Promise<HomeData> {
       cities: (citiesResult.data ?? []).length,
       plans: 4
     },
-    source: "supabase"
+    source: "supabase",
+    notice: "Supabase bağlantısı aktif. Yayındaki restoranlar veritabanından okunuyor."
   };
 }

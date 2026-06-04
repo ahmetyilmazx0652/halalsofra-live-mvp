@@ -3,7 +3,7 @@ import { getHomeData } from "@/lib/home-data";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { countries, restaurants, stats, source } = await getHomeData();
+  const { countries, restaurants, stats, source, notice } = await getHomeData();
   const firstCountryCities = countries[0]?.cities ?? [];
 
   return (
@@ -38,9 +38,7 @@ export default async function HomePage() {
         <div className="panel">
           <h2>Canlı MVP durumu</h2>
           <p className="muted">
-            {source === "supabase"
-              ? "Supabase bağlantısı aktif. Yayındaki restoranlar veritabanından okunuyor."
-              : "Supabase ayarları bekleniyor. Şimdilik lansman iskeleti demo verilerle gösteriliyor."}
+            {notice}
           </p>
           <a className="button primary" href="/owner">İşletme olarak başla</a>
         </div>
