@@ -96,8 +96,8 @@ begin
       email = nullif(trim(next_email), ''),
       description = nullif(trim(next_description), ''),
       halal_grade = next_halal_grade::halal_grade,
-      lat = next_lat,
-      lng = next_lng,
+      lat = coalesce(next_lat, lat),
+      lng = coalesce(next_lng, lng),
       updated_at = now()
   where id = target_restaurant_id
     and status = 'pending';
@@ -185,8 +185,8 @@ begin
       alcohol_free = coalesce(next_alcohol_free, false),
       prayer_room = coalesce(next_prayer_room, false),
       family_friendly = coalesce(next_family_friendly, false),
-      lat = next_lat,
-      lng = next_lng,
+      lat = coalesce(next_lat, lat),
+      lng = coalesce(next_lng, lng),
       updated_at = now()
   where id = target_restaurant_id
     and status = 'published';

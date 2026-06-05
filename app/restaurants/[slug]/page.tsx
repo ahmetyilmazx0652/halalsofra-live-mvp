@@ -10,8 +10,18 @@ function priceLabel(level: number | null) {
   return "€".repeat(Math.max(1, Math.min(level, 4)));
 }
 
-function mapsUrl(address: string, lat: number | null, lng: number | null) {
-  const destination = lat !== null && lng !== null ? `${lat},${lng}` : address;
+function mapsUrl(
+  name: string,
+  address: string,
+  cityName: string | null,
+  countryName: string | null,
+  lat: number | null,
+  lng: number | null
+) {
+  const destination = lat !== null && lng !== null
+    ? `${lat},${lng}`
+    : [name, address, cityName, countryName].filter(Boolean).join(", ");
+
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
 }
 
@@ -95,7 +105,19 @@ export default async function RestaurantDetailPage({
           </p>
           <p>{restaurant.description || "Bu restoran için açıklama yakında eklenecek."}</p>
           <div className="detail-actions">
-            <a className="button primary" href={mapsUrl(restaurant.address, restaurant.lat, restaurant.lng)} target="_blank" rel="noreferrer">
+            <a
+              className="button primary"
+              href={mapsUrl(
+                restaurant.name,
+                restaurant.address,
+                city?.name ?? null,
+                country?.name ?? null,
+                restaurant.lat,
+                restaurant.lng
+              )}
+              target="_blank"
+              rel="noreferrer"
+            >
               Yol Tarifi
             </a>
             {restaurant.phone ? <a className="button" href={`tel:${restaurant.phone}`}>Ara</a> : null}

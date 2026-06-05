@@ -283,8 +283,6 @@ export default async function AdminPage({
                   <input name="address" defaultValue={item.address} placeholder="Adres" />
                   <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
                   <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
-                  <input name="lat" defaultValue={item.lat ?? ""} inputMode="decimal" placeholder="Enlem, örn. 52.4983" />
-                  <input name="lng" defaultValue={item.lng ?? ""} inputMode="decimal" placeholder="Boylam, örn. 13.4236" />
                   <select name="halal_grade" defaultValue={item.halalGrade}>
                     <option value="A">Grade A</option>
                     <option value="B">Grade B</option>
@@ -363,8 +361,6 @@ export default async function AdminPage({
                   <input name="address" defaultValue={item.address} placeholder="Adres" />
                   <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
                   <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
-                  <input name="lat" defaultValue={item.lat ?? ""} inputMode="decimal" placeholder="Enlem, örn. 52.4983" />
-                  <input name="lng" defaultValue={item.lng ?? ""} inputMode="decimal" placeholder="Boylam, örn. 13.4236" />
                   <select name="halal_grade" defaultValue={item.halalGrade}>
                     <option value="A">Grade A</option>
                     <option value="B">Grade B</option>
