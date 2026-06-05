@@ -442,3 +442,24 @@ end;
 $$;
 
 grant execute on function public.review_user_review(uuid, text) to anon, authenticated;
+
+drop function if exists public.respond_to_review(uuid, text);
+
+create or replace function public.respond_to_review(
+  target_review_id uuid,
+  next_owner_response text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.reviews
+  set owner_response = nullif(trim(coalesce(next_owner_response, '')), '')
+  where id = target_review_id
+    and status = 'approved';
+end;
+$$;
+
+grant execute on function public.respond_to_review(uuid, text) to anon, authenticated;

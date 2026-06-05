@@ -45,6 +45,7 @@ type AdminReview = {
   halalRating: number | null;
   foodRating: number | null;
   body: string | null;
+  ownerResponse: string | null;
   createdAt: string;
   restaurantName: string;
   restaurantSlug: string;
@@ -92,6 +93,7 @@ function mapReview(item: any): AdminReview {
     halalRating: item.halal_rating,
     foodRating: item.food_rating,
     body: item.body,
+    ownerResponse: item.owner_response,
     createdAt: item.created_at,
     restaurantName: restaurant?.name ?? "Restoran",
     restaurantSlug: restaurant?.slug ?? ""
@@ -120,6 +122,20 @@ async function getPendingReviews() {
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(30);
+
+  if (result.error) return [];
+  return (result.data ?? []).map(mapReview);
+}
+
+async function getApprovedReviews() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("reviews")
+    .select("id,author_name,rating,halal_rating,food_rating,body,owner_response,created_at,restaurants(name,slug)")
+    .eq("status", "approved")
+    .order("created_at", { ascending: false })
+    .limit(24);
 
   if (result.error) return [];
   return (result.data ?? []).map(mapReview);
@@ -474,10 +490,43 @@ async function moderateReview(formData: FormData) {
   redirect(`/admin?reviewModerated=${status}`);
 }
 
+async function respondToReview(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
+
+  const id = cleanText(formData.get("id"));
+  const restaurantSlug = cleanText(formData.get("restaurant_slug"));
+  const response = cleanText(formData.get("owner_response"));
+
+  if (!id) {
+    redirect("/admin?error=review-response");
+  }
+
+  const result = await supabase.rpc("respond_to_review", {
+    target_review_id: id,
+    next_owner_response: response
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);
+  }
+
+  revalidatePath("/admin");
+  if (restaurantSlug) {
+    revalidatePath(`/restaurants/${restaurantSlug}`);
+  }
+  redirect("/admin?reviewResponse=1");
+}
+
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; reviewModerated?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; error?: string; q?: string };
+  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; error?: string; q?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -513,9 +562,10 @@ export default async function AdminPage({
   }
 
   const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
-  const [pendingRestaurants, pendingReviews, publishedRestaurants, archivedRestaurants] = await Promise.all([
+  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants] = await Promise.all([
     getPendingRestaurants(),
     getPendingReviews(),
+    getApprovedReviews(),
     getPublishedRestaurants(publishedQuery),
     getArchivedRestaurants()
   ]);
@@ -539,6 +589,9 @@ export default async function AdminPage({
         ) : null}
         {searchParams?.reviewModerated ? (
           <div className="notice success">Yorum işlemi tamamlandı: {searchParams.reviewModerated}</div>
+        ) : null}
+        {searchParams?.reviewResponse ? (
+          <div className="notice success">Yorum yanıtı güncellendi.</div>
         ) : null}
         {searchParams?.saved ? (
           <div className="notice success">Başvuru bilgileri güncellendi.</div>
@@ -688,6 +741,50 @@ export default async function AdminPage({
           <span className="pill">Yorum kuyruğu boş</span>
           <h2>Bekleyen yorum yok.</h2>
           <p className="muted">Kullanıcı yorumları gönderildiğinde burada görünecek.</p>
+        </section>
+      ) : null}
+
+      <section className="panel" style={{ marginTop: 24 }}>
+        <span className="pill">Yorum Yanıtları</span>
+        <h2>Yayındaki yorumlara cevap ver.</h2>
+        <p className="muted">
+          Yazılan yanıt restoran detayında “İşletme yanıtı” olarak görünür. Boş kaydedersen mevcut yanıt kaldırılır.
+        </p>
+      </section>
+
+      <section className="grid">
+        {approvedReviews.map((review) => (
+          <article className="card admin-card" key={review.id}>
+            <div className="card-top">
+              <span className="pill">approved</span>
+              <span className="pill">{review.rating}/5</span>
+              {review.ownerResponse ? <span className="pill">Yanıtlandı</span> : <span className="pill warning">Yanıt yok</span>}
+            </div>
+            <h3>{review.restaurantName}</h3>
+            <p className="muted">{review.authorName || "Misafir"} · {new Date(review.createdAt).toLocaleDateString("tr-TR")}</p>
+            <p>{review.body}</p>
+            <form action={respondToReview} className="response-form">
+              <input type="hidden" name="id" value={review.id} />
+              <input type="hidden" name="restaurant_slug" value={review.restaurantSlug} />
+              <textarea
+                name="owner_response"
+                defaultValue={review.ownerResponse ?? ""}
+                placeholder="İşletme yanıtı yaz..."
+              />
+              <div className="detail-actions">
+                <button className="button primary" type="submit">Yanıtı Kaydet</button>
+                {review.restaurantSlug ? <a className="button" href={`/restaurants/${review.restaurantSlug}`}>Detayı Aç</a> : null}
+              </div>
+            </form>
+          </article>
+        ))}
+      </section>
+
+      {approvedReviews.length === 0 ? (
+        <section className="empty-state">
+          <span className="pill">Yayın yorumu yok</span>
+          <h2>Cevaplanacak onaylı yorum yok.</h2>
+          <p className="muted">Yorumlar onaylandıktan sonra işletme yanıtı için burada listelenecek.</p>
         </section>
       ) : null}
 
