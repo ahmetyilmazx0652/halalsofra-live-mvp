@@ -12,6 +12,7 @@ type HomeExplorerProps = {
 };
 
 const ALL_CITIES = "__all_cities__";
+const ALL_COUNTRIES = "__all_countries__";
 
 function normalize(value: string) {
   return value.toLocaleLowerCase("tr").trim();
@@ -24,11 +25,17 @@ export function HomeExplorer({
   source,
   notice
 }: HomeExplorerProps) {
-  const [selectedCountry, setSelectedCountry] = useState(countries[0]?.name ?? "");
+  const [selectedCountry, setSelectedCountry] = useState(ALL_COUNTRIES);
   const [selectedCity, setSelectedCity] = useState(ALL_CITIES);
   const [query, setQuery] = useState("");
 
   const cityOptions = useMemo(() => {
+    if (selectedCountry === ALL_COUNTRIES) {
+      return Array.from(new Set(countries.flatMap((country) => country.cities))).sort((a, b) =>
+        a.localeCompare(b, "tr")
+      );
+    }
+
     return countries.find((country) => country.name === selectedCountry)?.cities ?? [];
   }, [countries, selectedCountry]);
 
@@ -36,7 +43,7 @@ export function HomeExplorer({
     const q = normalize(query);
 
     return restaurants.filter((restaurant) => {
-      const countryMatch = !selectedCountry || restaurant.country === selectedCountry;
+      const countryMatch = selectedCountry === ALL_COUNTRIES || restaurant.country === selectedCountry;
       const cityMatch = selectedCity === ALL_CITIES || restaurant.city === selectedCity;
       const haystack = normalize(
         [
@@ -73,6 +80,7 @@ export function HomeExplorer({
                 setSelectedCity(ALL_CITIES);
               }}
             >
+              <option value={ALL_COUNTRIES}>Tüm ülkeler</option>
               {countries.map((country) => (
                 <option key={country.id} value={country.name}>{country.flag} {country.name}</option>
               ))}
