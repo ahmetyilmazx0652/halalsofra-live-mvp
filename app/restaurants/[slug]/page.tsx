@@ -25,6 +25,15 @@ function formatMenuPrice(price: number | string | null, currency: string | null)
   }).format(numericPrice);
 }
 
+function formatDate(value: string | null) {
+  if (!value) return null;
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(new Date(value));
+}
+
 export default async function RestaurantDetailPage({
   params
 }: {
@@ -63,6 +72,13 @@ export default async function RestaurantDetailPage({
         .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     }))
     .filter((category: any) => category.menu_items.length > 0);
+  const certificateResult = await supabase
+    .from("certificates")
+    .select("id,body,certificate_number,valid_from,valid_until,storage_path,status")
+    .eq("restaurant_id", restaurant.id)
+    .eq("status", "approved")
+    .order("valid_until", { ascending: false });
+  const certificate: any = certificateResult.data?.[0] ?? null;
 
   return (
     <main className="page">
@@ -102,7 +118,20 @@ export default async function RestaurantDetailPage({
         <article className="card">
           <span className="pill">Helal Durumu</span>
           <h3>Grade {restaurant.halal_grade}</h3>
-          <p className="muted">Detaylı sertifika ve belge görüntüleme alanı bir sonraki sürümde bağlanacak.</p>
+          {certificate ? (
+            <div className="certificate-box">
+              <p><strong>{certificate.body}</strong></p>
+              {certificate.certificate_number ? <p className="muted">Belge no: {certificate.certificate_number}</p> : null}
+              {certificate.valid_until ? <p className="muted">Geçerli: {formatDate(certificate.valid_until)}</p> : null}
+              {certificate.storage_path ? (
+                <a className="button" href={certificate.storage_path} target="_blank" rel="noreferrer">
+                  Sertifikayı Görüntüle
+                </a>
+              ) : null}
+            </div>
+          ) : (
+            <p className="muted">Bu restoran için onaylı sertifika belgesi henüz eklenmedi.</p>
+          )}
         </article>
         <article className="card">
           <span className="pill">Özellikler</span>

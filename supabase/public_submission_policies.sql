@@ -5,6 +5,8 @@ grant insert on public.menu_categories to anon, authenticated;
 grant select on public.menu_categories to anon, authenticated;
 grant insert on public.menu_items to anon, authenticated;
 grant select on public.menu_items to anon, authenticated;
+grant insert on public.certificates to anon, authenticated;
+grant select on public.certificates to anon, authenticated;
 
 drop policy if exists "Public can submit pending restaurants" on public.restaurants;
 create policy "Public can submit pending restaurants"
@@ -47,7 +49,12 @@ begin
   update public.restaurants
   set status = next_status::restaurant_status,
       updated_at = now()
-  where id = restaurant_id
+  where id = review_restaurant.restaurant_id
+    and status = 'pending';
+
+  update public.certificates
+  set status = case when next_status = 'published' then 'approved' else 'rejected' end
+  where restaurant_id = review_restaurant.restaurant_id
     and status = 'pending';
 end;
 $$;
@@ -84,3 +91,25 @@ with check (
       and r.owner_id is null
   )
 );
+
+drop policy if exists "Public can add certificates for submitted restaurants" on public.certificates;
+create policy "Public can add certificates for submitted restaurants"
+on public.certificates
+for insert
+to anon, authenticated
+with check (
+  exists (
+    select 1
+    from public.restaurants r
+    where r.id = restaurant_id
+      and r.status = 'pending'
+      and r.owner_id is null
+  )
+);
+
+drop policy if exists "Public MVP admin can read pending certificates" on public.certificates;
+create policy "Public MVP admin can read pending certificates"
+on public.certificates
+for select
+to anon, authenticated
+using (status = 'pending');

@@ -123,6 +123,26 @@ async function submitRestaurant(formData: FormData) {
     }
   }
 
+  const certificateBody = cleanText(formData.get("certificate_body"));
+  const certificateUrl = cleanText(formData.get("certificate_url"));
+  const certificateNumber = cleanText(formData.get("certificate_number"));
+
+  if (certificateBody || certificateUrl || certificateNumber) {
+    const certificateResult = await supabase.from("certificates").insert({
+      restaurant_id: insertResult.data.id,
+      body: certificateBody || "İşletme beyanı",
+      certificate_number: certificateNumber,
+      valid_from: cleanText(formData.get("certificate_valid_from")) || null,
+      valid_until: cleanText(formData.get("certificate_valid_until")) || null,
+      storage_path: certificateUrl,
+      status: "pending"
+    });
+
+    if (certificateResult.error) {
+      redirect(`/owner?error=${encodeURIComponent(certificateResult.error.message)}`);
+    }
+  }
+
   redirect("/owner?submitted=1");
 }
 
@@ -236,6 +256,17 @@ export default async function OwnerPage({
                 <input name={`menu_price_${index}`} inputMode="decimal" placeholder="Fiyat €" />
               </div>
             ))}
+          </div>
+          <div className="menu-form">
+            <h3>Sertifika bilgisi</h3>
+            <p className="muted">PDF veya belge linki varsa ekleyin. Admin onayından sonra kullanıcı restoran detayında görebilecek.</p>
+            <div className="form-grid">
+              <input name="certificate_body" placeholder="Sertifika kurumu, örn. HMC Europe" />
+              <input name="certificate_number" placeholder="Sertifika numarası" />
+              <input name="certificate_url" placeholder="Sertifika PDF/resim linki" />
+              <input name="certificate_valid_from" type="date" aria-label="Geçerlilik başlangıcı" />
+              <input name="certificate_valid_until" type="date" aria-label="Geçerlilik bitişi" />
+            </div>
           </div>
           <div className="checks">
             <label><input name="alcohol_free" type="checkbox" /> Alkolsüz</label>

@@ -19,6 +19,7 @@ type PendingRestaurant = {
   prayerRoom: boolean;
   familyFriendly: boolean;
   googlePlaceId: string | null;
+  hasCertificate: boolean;
   status: string;
   cityName: string;
   countryName: string;
@@ -29,7 +30,7 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name)")
+    .select("id,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name),certificates(id,status,storage_path)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -48,6 +49,7 @@ async function getPendingRestaurants() {
     prayerRoom: Boolean(item.prayer_room),
     familyFriendly: Boolean(item.family_friendly),
     googlePlaceId: item.google_place_id,
+    hasCertificate: (item.certificates ?? []).length > 0,
     status: item.status,
     cityName: item.cities?.[0]?.name ?? item.cities?.name ?? "Bilinmiyor",
     countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor"
@@ -124,6 +126,7 @@ export default async function AdminPage({
               {item.phone ? <span>{item.phone}</span> : null}
               {item.email ? <span>{item.email}</span> : null}
               {item.googlePlaceId ? <span>Place ID var</span> : null}
+              {item.hasCertificate ? <span>Sertifika var</span> : null}
             </div>
             {item.description ? <p className="muted">{item.description}</p> : null}
             <div className="feature-row">

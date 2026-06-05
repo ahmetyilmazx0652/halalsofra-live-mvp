@@ -413,6 +413,20 @@ input[type="checkbox"] {
   white-space: nowrap;
 }
 
+.certificate-box {
+  display: grid;
+  gap: 8px;
+}
+
+.certificate-box p {
+  margin: 0;
+}
+
+.certificate-box .button {
+  width: fit-content;
+  margin-top: 6px;
+}
+
 @media (max-width: 800px) {
   .hero,
   .detail-hero,
