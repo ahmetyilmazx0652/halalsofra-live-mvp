@@ -69,7 +69,7 @@ export default async function RestaurantDetailPage({
 
   const result = await supabase
     .from("restaurants")
-    .select("id,name,slug,cuisine,description,address,phone,email,website,instagram,lat,lng,price_level,halal_grade,alcohol_free,prayer_room,family_friendly,subscription_plan,cities(name),countries(name,flag)")
+    .select("id,name,slug,cuisine,description,address,phone,email,website,instagram,opening_hours,lat,lng,price_level,halal_grade,alcohol_free,prayer_room,family_friendly,subscription_plan,cities(name),countries(name,flag)")
     .eq("slug", params.slug)
     .eq("status", "published")
     .single();
@@ -142,6 +142,7 @@ export default async function RestaurantDetailPage({
           <h2>Restoran Bilgileri</h2>
           <div className="info-list">
             <p><strong>Adres</strong><span>{restaurant.address}</span></p>
+            {restaurant.opening_hours ? <p><strong>Çalışma saatleri</strong><span>{restaurant.opening_hours}</span></p> : null}
             <p><strong>Mutfak</strong><span>{restaurant.cuisine}</span></p>
             <p><strong>Fiyat</strong><span>{priceLabel(restaurant.price_level)}</span></p>
             {restaurant.phone ? <p><strong>Telefon</strong><span>{restaurant.phone}</span></p> : null}

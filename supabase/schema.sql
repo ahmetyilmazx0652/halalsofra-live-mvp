@@ -44,6 +44,7 @@ create table public.restaurants (
   email text,
   website text,
   instagram text,
+  opening_hours text,
   lat double precision,
   lng double precision,
   google_place_id text,

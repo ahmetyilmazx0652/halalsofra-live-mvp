@@ -16,6 +16,7 @@ type AdminRestaurant = {
   address: string;
   phone: string | null;
   email: string | null;
+  openingHours: string | null;
   cuisine: string;
   description: string | null;
   halalGrade: string;
@@ -43,6 +44,7 @@ function mapRestaurant(item: any): AdminRestaurant {
     address: item.address,
     phone: item.phone,
     email: item.email,
+    openingHours: item.opening_hours,
     cuisine: item.cuisine,
     description: item.description,
     halalGrade: item.halal_grade,
@@ -68,7 +70,7 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -81,7 +83,7 @@ async function getPublishedRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
     .eq("status", "published")
     .order("updated_at", { ascending: false })
     .limit(24);
@@ -183,6 +185,7 @@ async function updatePendingRestaurant(formData: FormData) {
     next_address: cleanText(formData.get("address")),
     next_phone: cleanText(formData.get("phone")),
     next_email: cleanText(formData.get("email")),
+    next_opening_hours: cleanText(formData.get("opening_hours")),
     next_description: cleanText(formData.get("description")),
     next_halal_grade: halalGrade,
     next_certificate_body: cleanText(formData.get("certificate_body")),
@@ -227,6 +230,7 @@ async function updatePublishedRestaurant(formData: FormData) {
     next_address: cleanText(formData.get("address")),
     next_phone: cleanText(formData.get("phone")),
     next_email: cleanText(formData.get("email")),
+    next_opening_hours: cleanText(formData.get("opening_hours")),
     next_description: cleanText(formData.get("description")),
     next_halal_grade: halalGrade,
     next_alcohol_free: formData.get("alcohol_free") === "on",
@@ -367,6 +371,7 @@ export default async function AdminPage({
               <span>{item.cuisine}</span>
               {item.phone ? <span>{item.phone}</span> : null}
               {item.email ? <span>{item.email}</span> : null}
+              {item.openingHours ? <span>{item.openingHours}</span> : null}
               {item.googlePlaceId ? <span>Place ID var</span> : null}
               {item.lat !== null && item.lng !== null ? <span>Koordinat var</span> : null}
               {item.hasCertificate ? <span>Sertifika var</span> : null}
@@ -386,6 +391,7 @@ export default async function AdminPage({
                   <input name="address" defaultValue={item.address} placeholder="Adres" />
                   <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
                   <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
+                  <input name="opening_hours" defaultValue={item.openingHours ?? ""} placeholder="Çalışma saatleri" />
                   <select name="halal_grade" defaultValue={item.halalGrade}>
                     <option value="A">Grade A</option>
                     <option value="B">Grade B</option>
@@ -446,6 +452,7 @@ export default async function AdminPage({
               <span>{item.cuisine}</span>
               {item.phone ? <span>{item.phone}</span> : null}
               {item.email ? <span>{item.email}</span> : null}
+              {item.openingHours ? <span>{item.openingHours}</span> : null}
               {item.googlePlaceId ? <span>Place ID var</span> : null}
               {item.lat !== null && item.lng !== null ? <span>Koordinat var</span> : null}
               {item.hasCertificate ? <span>Sertifika var</span> : null}
@@ -464,6 +471,7 @@ export default async function AdminPage({
                   <input name="address" defaultValue={item.address} placeholder="Adres" />
                   <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
                   <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
+                  <input name="opening_hours" defaultValue={item.openingHours ?? ""} placeholder="Çalışma saatleri" />
                   <select name="halal_grade" defaultValue={item.halalGrade}>
                     <option value="A">Grade A</option>
                     <option value="B">Grade B</option>

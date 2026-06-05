@@ -61,7 +61,11 @@ $$;
 
 grant execute on function public.review_restaurant(uuid, text) to anon, authenticated;
 
+alter table public.restaurants
+add column if not exists opening_hours text;
+
 drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text);
+drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text, double precision, double precision);
 
 create or replace function public.update_pending_restaurant(
   target_restaurant_id uuid,
@@ -69,6 +73,7 @@ create or replace function public.update_pending_restaurant(
   next_address text,
   next_phone text,
   next_email text,
+  next_opening_hours text,
   next_description text,
   next_halal_grade text,
   next_certificate_body text,
@@ -94,6 +99,7 @@ begin
       address = coalesce(nullif(trim(next_address), ''), address),
       phone = nullif(trim(next_phone), ''),
       email = nullif(trim(next_email), ''),
+      opening_hours = nullif(trim(next_opening_hours), ''),
       description = nullif(trim(next_description), ''),
       halal_grade = next_halal_grade::halal_grade,
       lat = coalesce(next_lat, lat),
@@ -142,9 +148,10 @@ begin
 end;
 $$;
 
-grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text, double precision, double precision) to anon, authenticated;
+grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text, text, double precision, double precision) to anon, authenticated;
 
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text);
+drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision);
 
 create or replace function public.update_published_restaurant(
   target_restaurant_id uuid,
@@ -152,6 +159,7 @@ create or replace function public.update_published_restaurant(
   next_address text,
   next_phone text,
   next_email text,
+  next_opening_hours text,
   next_description text,
   next_halal_grade text,
   next_alcohol_free boolean,
@@ -180,6 +188,7 @@ begin
       address = coalesce(nullif(trim(next_address), ''), address),
       phone = nullif(trim(next_phone), ''),
       email = nullif(trim(next_email), ''),
+      opening_hours = nullif(trim(next_opening_hours), ''),
       description = nullif(trim(next_description), ''),
       halal_grade = next_halal_grade::halal_grade,
       alcohol_free = coalesce(next_alcohol_free, false),
@@ -231,7 +240,7 @@ begin
 end;
 $$;
 
-grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
+grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
 
 drop policy if exists "Public can add menu category for submitted restaurants" on public.menu_categories;
 create policy "Public can add menu category for submitted restaurants"
