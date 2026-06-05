@@ -49,7 +49,7 @@ export default async function HomePage() {
 
       <section className="grid">
         {restaurants.map((restaurant) => (
-          <article className={`card ${restaurant.featured ? "featured" : ""}`} key={restaurant.id}>
+          <a className={`card restaurant-card ${restaurant.featured ? "featured" : ""}`} href={`/restaurants/${restaurant.slug}`} key={restaurant.id}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <span className="pill">Grade {restaurant.grade}</span>
               {restaurant.featured ? <span className="pill">Öne çıkan</span> : null}
@@ -61,7 +61,7 @@ export default async function HomePage() {
               {restaurant.rating ? <><strong>★ {restaurant.rating}</strong> · </> : null}
               {restaurant.cuisine} · {restaurant.price}
             </p>
-          </article>
+          </a>
         ))}
       </section>
 
