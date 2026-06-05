@@ -343,13 +343,85 @@ input[type="checkbox"] {
   color: var(--muted);
 }
 
+.menu-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.menu-form h3 {
+  margin: 0;
+}
+
+.menu-form p {
+  margin: 0 0 4px;
+}
+
+.menu-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 0.6fr;
+  gap: 10px;
+}
+
+.menu-panel {
+  margin-top: 20px;
+}
+
+.menu-panel h2 {
+  margin-top: 10px;
+}
+
+.menu-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.menu-category h3 {
+  margin: 0 0 10px;
+  color: var(--green-dark);
+}
+
+.menu-items {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.menu-item h4,
+.menu-item p {
+  margin: 0;
+}
+
+.menu-item p {
+  margin-top: 4px;
+}
+
+.menu-item strong {
+  color: var(--green-dark);
+  white-space: nowrap;
+}
+
 @media (max-width: 800px) {
   .hero,
   .detail-hero,
   .filters,
   .grid,
   .plans,
-  .form-grid {
+  .form-grid,
+  .menu-input-row,
+  .menu-item {
     grid-template-columns: 1fr;
   }
 

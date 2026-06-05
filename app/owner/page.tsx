@@ -27,6 +27,12 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+function cleanPrice(value: FormDataEntryValue | null) {
+  const text = cleanText(value).replace(",", ".");
+  const price = Number(text);
+  return Number.isFinite(price) && price > 0 ? price : null;
+}
+
 async function submitRestaurant(formData: FormData) {
   "use server";
 
@@ -72,10 +78,49 @@ async function submitRestaurant(formData: FormData) {
     alcohol_free: formData.get("alcohol_free") === "on",
     prayer_room: formData.get("prayer_room") === "on",
     family_friendly: formData.get("family_friendly") === "on"
-  });
+  }).select("id").single();
 
   if (insertResult.error) {
     redirect(`/owner?error=${encodeURIComponent(insertResult.error.message)}`);
+  }
+
+  const menuItems = [1, 2, 3]
+    .map((index) => ({
+      name: cleanText(formData.get(`menu_name_${index}`)),
+      description: cleanText(formData.get(`menu_description_${index}`)),
+      price: cleanPrice(formData.get(`menu_price_${index}`))
+    }))
+    .filter((item) => item.name);
+
+  if (menuItems.length > 0) {
+    const categoryResult = await supabase
+      .from("menu_categories")
+      .insert({
+        restaurant_id: insertResult.data.id,
+        name: cleanText(formData.get("menu_category")) || "Popüler",
+        sort_order: 0
+      })
+      .select("id")
+      .single();
+
+    if (categoryResult.error) {
+      redirect(`/owner?error=${encodeURIComponent(categoryResult.error.message)}`);
+    }
+
+    const itemResult = await supabase.from("menu_items").insert(
+      menuItems.map((item, index) => ({
+        category_id: categoryResult.data.id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        currency: "EUR",
+        sort_order: index
+      }))
+    );
+
+    if (itemResult.error) {
+      redirect(`/owner?error=${encodeURIComponent(itemResult.error.message)}`);
+    }
   }
 
   redirect("/owner?submitted=1");
@@ -180,6 +225,18 @@ export default async function OwnerPage({
             </select>
           </div>
           <textarea name="description" style={{ marginTop: 12 }} placeholder="Kısa açıklama" />
+          <div className="menu-form">
+            <h3>Menüden örnekler</h3>
+            <p className="muted">İlk etapta en popüler 1-3 ürünü girin. Onaydan sonra restoran detayında görünecek.</p>
+            <input name="menu_category" placeholder="Menü kategorisi, örn. Popüler / Kebaplar / Tatlılar" />
+            {[1, 2, 3].map((index) => (
+              <div className="menu-input-row" key={index}>
+                <input name={`menu_name_${index}`} placeholder={`Ürün ${index} adı`} />
+                <input name={`menu_description_${index}`} placeholder="Kısa açıklama" />
+                <input name={`menu_price_${index}`} inputMode="decimal" placeholder="Fiyat €" />
+              </div>
+            ))}
+          </div>
           <div className="checks">
             <label><input name="alcohol_free" type="checkbox" /> Alkolsüz</label>
             <label><input name="prayer_room" type="checkbox" /> Mescid var</label>

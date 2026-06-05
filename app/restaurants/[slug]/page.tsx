@@ -15,6 +15,16 @@ function mapsUrl(address: string, lat: number | null, lng: number | null) {
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
 }
 
+function formatMenuPrice(price: number | string | null, currency: string | null) {
+  if (price === null) return "Fiyat bekleniyor";
+  const numericPrice = typeof price === "string" ? Number(price) : price;
+  if (!Number.isFinite(numericPrice)) return "Fiyat bekleniyor";
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: currency || "EUR"
+  }).format(numericPrice);
+}
+
 export default async function RestaurantDetailPage({
   params
 }: {
@@ -40,6 +50,19 @@ export default async function RestaurantDetailPage({
   const restaurant: any = result.data;
   const country = restaurant.countries?.[0] ?? restaurant.countries;
   const city = restaurant.cities?.[0] ?? restaurant.cities;
+  const menuResult = await supabase
+    .from("menu_categories")
+    .select("id,name,sort_order,menu_items(id,name,description,price,currency,is_available,sort_order)")
+    .eq("restaurant_id", restaurant.id)
+    .order("sort_order", { ascending: true });
+  const menuCategories = (menuResult.data ?? [])
+    .map((category: any) => ({
+      ...category,
+      menu_items: (category.menu_items ?? [])
+        .filter((item: any) => item.is_available)
+        .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    }))
+    .filter((category: any) => category.menu_items.length > 0);
 
   return (
     <main className="page">
@@ -92,11 +115,37 @@ export default async function RestaurantDetailPage({
             ) : null}
           </div>
         </article>
-        <article className="card">
-          <span className="pill">Menü</span>
-          <h3>Menü yakında</h3>
-          <p className="muted">İşletmeler menü ve fiyatlarını eklediğinde bu alanda görünecek.</p>
-        </article>
+      </section>
+
+      <section className="panel menu-panel">
+        <span className="pill">Menü</span>
+        <h2>Menü ve fiyatlar</h2>
+        {menuCategories.length > 0 ? (
+          <div className="menu-grid">
+            {menuCategories.map((category: any) => (
+              <div className="menu-category" key={category.id}>
+                <h3>{category.name}</h3>
+                <div className="menu-items">
+                  {category.menu_items.map((item: any) => (
+                    <article className="menu-item" key={item.id}>
+                      <div>
+                        <h4>{item.name}</h4>
+                        {item.description ? <p className="muted">{item.description}</p> : null}
+                      </div>
+                      <strong>{formatMenuPrice(item.price, item.currency)}</strong>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <span className="pill">Menü bekleniyor</span>
+            <h3>Bu restoran için menü henüz eklenmedi.</h3>
+            <p className="muted">İşletme menü ve fiyatlarını eklediğinde burada görünecek.</p>
+          </div>
+        )}
       </section>
     </main>
   );
