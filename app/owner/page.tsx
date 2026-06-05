@@ -167,10 +167,13 @@ async function getCities() {
 export default async function OwnerPage({
   searchParams
 }: {
-  searchParams?: { submitted?: string; error?: string };
+  searchParams?: { submitted?: string; error?: string; plan?: string };
 }) {
   const cities = await getCities();
   const submitted = searchParams?.submitted === "1";
+  const selectedPlan = plans.some((plan) => plan.id === searchParams?.plan)
+    ? searchParams?.plan
+    : "free";
 
   return (
     <main className="page">
@@ -184,20 +187,23 @@ export default async function OwnerPage({
 
       <section className="plans" style={{ marginTop: 16 }}>
         {plans.map((plan) => (
-          <article className={`plan ${plan.recommended ? "recommended" : ""}`} key={plan.id}>
+          <article className={`plan ${plan.recommended ? "recommended" : ""} ${selectedPlan === plan.id ? "selected" : ""}`} key={plan.id}>
             {plan.recommended ? <span className="pill">Önerilen</span> : null}
+            {selectedPlan === plan.id ? <span className="pill">Seçili</span> : null}
             <h3>{plan.name}</h3>
             <h2>{plan.price}<span className="muted" style={{ fontSize: 14 }}>/ay</span></h2>
             <p className="muted">{plan.description}</p>
             {plan.features.map((feature) => (
               <p key={feature}>✓ {feature}</p>
             ))}
-            <button className="button primary" style={{ width: "100%" }}>Paketi Seç</button>
+            <a className="button primary" style={{ width: "100%", textAlign: "center" }} href={`/owner?plan=${plan.id}#restaurant-application`}>
+              Paketi Seç
+            </a>
           </article>
         ))}
       </section>
 
-      <section className="panel" style={{ marginTop: 16 }}>
+      <section className="panel" id="restaurant-application" style={{ marginTop: 16 }}>
         <h2>Restoran Başvurusu</h2>
         <p className="muted">
           Zorunlu alanlar: restoran adı, ülke/şehir ve tam adres. Menü, sertifika, telefon ve diğer bilgiler opsiyoneldir.
@@ -266,7 +272,7 @@ export default async function OwnerPage({
               <option value="3">€€€</option>
               <option value="4">€€€€</option>
             </select>
-            <select name="subscription_plan" defaultValue="free">
+            <select name="subscription_plan" defaultValue={selectedPlan}>
               {plans.map((plan) => (
                 <option key={plan.id} value={plan.id}>{plan.name}</option>
               ))}

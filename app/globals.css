@@ -269,6 +269,11 @@ input[type="checkbox"] {
   border-color: var(--gold);
 }
 
+.plan.selected {
+  border-color: var(--green);
+  box-shadow: 0 0 0 2px rgba(26, 107, 74, 0.12);
+}
+
 .empty-state {
   margin-top: 20px;
   padding: 28px;
