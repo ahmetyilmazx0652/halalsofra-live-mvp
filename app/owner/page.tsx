@@ -198,6 +198,9 @@ export default async function OwnerPage({
 
       <section className="panel" style={{ marginTop: 16 }}>
         <h2>Restoran Başvurusu</h2>
+        <p className="muted">
+          Zorunlu alanlar: restoran adı, ülke/şehir ve tam adres. Menü, sertifika, telefon ve diğer bilgiler opsiyoneldir.
+        </p>
         {searchParams?.submitted ? (
           <div className="notice success">Başvuru alındı. Admin onayından sonra yayına çıkacak.</div>
         ) : null}
@@ -206,19 +209,19 @@ export default async function OwnerPage({
         ) : null}
         <form action={submitRestaurant}>
           <div className="form-grid">
-            <input name="name" placeholder="Restoran adı" required />
-            <input name="phone" placeholder="Telefon" />
-            <input name="email" type="email" placeholder="E-posta" />
+            <input name="name" placeholder="Restoran adı (zorunlu)" required />
+            <input name="phone" placeholder="Telefon (opsiyonel)" />
+            <input name="email" type="email" placeholder="E-posta (opsiyonel)" />
             <select name="city_id" required>
-              <option value="">Ülke / şehir seç</option>
+              <option value="">Ülke / şehir seç (zorunlu)</option>
               {cities.map((city) => (
                 <option key={city.id} value={city.id}>
                   {city.countryFlag} {city.countryName} / {city.name}
                 </option>
               ))}
             </select>
-            <input name="address" placeholder="Tam adres" required />
-            <input name="google_place_id" placeholder="Google Place ID" />
+            <input name="address" placeholder="Tam adres (zorunlu)" required />
+            <input name="google_place_id" placeholder="Google Place ID (opsiyonel)" />
             <select name="cuisine" defaultValue="turkish">
               <option value="turkish">Türk</option>
               <option value="arabic">Arap</option>
@@ -244,26 +247,26 @@ export default async function OwnerPage({
               ))}
             </select>
           </div>
-          <textarea name="description" style={{ marginTop: 12 }} placeholder="Kısa açıklama" />
+          <textarea name="description" style={{ marginTop: 12 }} placeholder="Kısa açıklama (opsiyonel)" />
           <div className="menu-form">
             <h3>Menüden örnekler</h3>
-            <p className="muted">İlk etapta en popüler 1-3 ürünü girin. Onaydan sonra restoran detayında görünecek.</p>
-            <input name="menu_category" placeholder="Menü kategorisi, örn. Popüler / Kebaplar / Tatlılar" />
+            <p className="muted">Opsiyonel. İsterseniz en popüler 1-3 ürünü girin; boş bırakılırsa başvuru yine gönderilir.</p>
+            <input name="menu_category" placeholder="Menü kategorisi, örn. Popüler / Kebaplar / Tatlılar (opsiyonel)" />
             {[1, 2, 3].map((index) => (
               <div className="menu-input-row" key={index}>
-                <input name={`menu_name_${index}`} placeholder={`Ürün ${index} adı`} />
-                <input name={`menu_description_${index}`} placeholder="Kısa açıklama" />
-                <input name={`menu_price_${index}`} inputMode="decimal" placeholder="Fiyat €" />
+                <input name={`menu_name_${index}`} placeholder={`Ürün ${index} adı (opsiyonel)`} />
+                <input name={`menu_description_${index}`} placeholder="Kısa açıklama (opsiyonel)" />
+                <input name={`menu_price_${index}`} inputMode="decimal" placeholder="Fiyat € (opsiyonel)" />
               </div>
             ))}
           </div>
           <div className="menu-form">
             <h3>Sertifika bilgisi</h3>
-            <p className="muted">PDF veya belge linki varsa ekleyin. Admin onayından sonra kullanıcı restoran detayında görebilecek.</p>
+            <p className="muted">Opsiyonel. PDF veya belge linki varsa ekleyin; yoksa bu bölümü tamamen boş bırakabilirsiniz.</p>
             <div className="form-grid">
-              <input name="certificate_body" placeholder="Sertifika kurumu, örn. HMC Europe" />
-              <input name="certificate_number" placeholder="Sertifika numarası" />
-              <input name="certificate_url" placeholder="Sertifika PDF/resim linki" />
+              <input name="certificate_body" placeholder="Sertifika kurumu, örn. HMC Europe (opsiyonel)" />
+              <input name="certificate_number" placeholder="Sertifika numarası (opsiyonel)" />
+              <input name="certificate_url" placeholder="Sertifika PDF/resim linki (opsiyonel)" />
               <input name="certificate_valid_from" type="date" aria-label="Geçerlilik başlangıcı" />
               <input name="certificate_valid_until" type="date" aria-label="Geçerlilik bitişi" />
             </div>
