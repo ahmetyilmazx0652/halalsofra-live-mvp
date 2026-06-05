@@ -1,6 +1,6 @@
-import { unstable_noStore as noStore } from "next/cache";
+import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +45,29 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function formatReviewDate(value: string | null) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("tr-TR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  }).format(new Date(value));
+}
+
+function cleanText(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanRating(value: FormDataEntryValue | null) {
+  const rating = Number(cleanText(value));
+  return Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null;
+}
+
+function stars(value: number | null) {
+  if (!value) return "Puan yok";
+  return "★".repeat(value) + "☆".repeat(5 - value);
+}
+
 function websiteUrl(value: string | null) {
   if (!value) return null;
   return value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
@@ -63,6 +86,38 @@ function plainDescription(value: string | null, name: string, cityName: string |
   const location = [cityName, countryName].filter(Boolean).join(", ");
   const suffix = location ? ` ${location}.` : "";
   return `${text}${suffix}`.slice(0, 165);
+}
+
+async function submitReview(formData: FormData) {
+  "use server";
+
+  const restaurantId = cleanText(formData.get("restaurant_id"));
+  const slug = cleanText(formData.get("slug"));
+  const rating = cleanRating(formData.get("rating"));
+  const body = cleanText(formData.get("body"));
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect(`/restaurants/${slug}?reviewError=config`);
+  }
+  if (!restaurantId || !slug || !rating || !body) {
+    redirect(`/restaurants/${slug}?reviewError=missing`);
+  }
+
+  const result = await supabase.from("reviews").insert({
+    restaurant_id: restaurantId,
+    author_name: cleanText(formData.get("author_name")) || "Misafir",
+    rating,
+    halal_rating: cleanRating(formData.get("halal_rating")),
+    food_rating: cleanRating(formData.get("food_rating")),
+    body
+  });
+
+  if (result.error) {
+    redirect(`/restaurants/${slug}?reviewError=${encodeURIComponent(result.error.message)}`);
+  }
+
+  revalidatePath(`/restaurants/${slug}`);
+  redirect(`/restaurants/${slug}?reviewed=1`);
 }
 
 export async function generateMetadata({
@@ -118,9 +173,11 @@ export async function generateMetadata({
 }
 
 export default async function RestaurantDetailPage({
-  params
+  params,
+  searchParams
 }: {
   params: { slug: string };
+  searchParams?: { reviewed?: string; reviewError?: string };
 }) {
   noStore();
 
@@ -170,6 +227,16 @@ export default async function RestaurantDetailPage({
     .eq("restaurant_id", restaurant.id)
     .order("sort_order", { ascending: true });
   const photos = photoResult.data ?? [];
+  const reviewsResult = await supabase
+    .from("reviews")
+    .select("id,author_name,rating,halal_rating,food_rating,body,owner_response,created_at")
+    .eq("restaurant_id", restaurant.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const reviews = reviewsResult.data ?? [];
+  const averageRating = reviews.length > 0
+    ? reviews.reduce((total: number, review: any) => total + (review.rating ?? 0), 0) / reviews.length
+    : null;
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
@@ -182,6 +249,13 @@ export default async function RestaurantDetailPage({
     url: `https://halalsofra-live-mvp.vercel.app/restaurants/${restaurant.slug}`,
     image: photos.map((photo) => photo.storage_path),
     priceRange: priceLabel(restaurant.price_level),
+    aggregateRating: averageRating
+      ? {
+          "@type": "AggregateRating",
+          ratingValue: Number(averageRating.toFixed(1)),
+          reviewCount: reviews.length
+        }
+      : undefined,
     geo: restaurant.lat !== null && restaurant.lng !== null
       ? {
           "@type": "GeoCoordinates",
@@ -323,6 +397,92 @@ export default async function RestaurantDetailPage({
             <span className="pill">Menü bekleniyor</span>
             <h3>Bu restoran için menü henüz eklenmedi.</h3>
             <p className="muted">İşletme menü ve fiyatlarını eklediğinde burada görünecek.</p>
+          </div>
+        )}
+      </section>
+
+      <section className="panel reviews-panel">
+        <div className="section-heading">
+          <div>
+            <span className="pill">Yorumlar</span>
+            <h2>Kullanıcı deneyimleri</h2>
+          </div>
+          {averageRating ? (
+            <div className="rating-summary">
+              <strong>{averageRating.toFixed(1)}</strong>
+              <span>{reviews.length} yorum</span>
+            </div>
+          ) : null}
+        </div>
+
+        {searchParams?.reviewed ? (
+          <div className="notice success">Yorumun kaydedildi. Teşekkürler.</div>
+        ) : null}
+        {searchParams?.reviewError ? (
+          <div className="notice error">Yorum kaydedilemedi: {decodeURIComponent(searchParams.reviewError)}</div>
+        ) : null}
+
+        <form action={submitReview} className="review-form">
+          <input type="hidden" name="restaurant_id" value={restaurant.id} />
+          <input type="hidden" name="slug" value={restaurant.slug} />
+          <div className="form-grid">
+            <input name="author_name" placeholder="Adınız (opsiyonel)" />
+            <select name="rating" defaultValue="5" required>
+              <option value="5">5 yıldız</option>
+              <option value="4">4 yıldız</option>
+              <option value="3">3 yıldız</option>
+              <option value="2">2 yıldız</option>
+              <option value="1">1 yıldız</option>
+            </select>
+            <select name="halal_rating" defaultValue="">
+              <option value="">Helal uyumu puanı</option>
+              <option value="5">Helal uyumu 5</option>
+              <option value="4">Helal uyumu 4</option>
+              <option value="3">Helal uyumu 3</option>
+              <option value="2">Helal uyumu 2</option>
+              <option value="1">Helal uyumu 1</option>
+            </select>
+            <select name="food_rating" defaultValue="">
+              <option value="">Yemek puanı</option>
+              <option value="5">Yemek 5</option>
+              <option value="4">Yemek 4</option>
+              <option value="3">Yemek 3</option>
+              <option value="2">Yemek 2</option>
+              <option value="1">Yemek 1</option>
+            </select>
+          </div>
+          <textarea name="body" required placeholder="Deneyiminizi yazın. Menü, temizlik, helal hassasiyeti veya servis hakkında kısa bir not bırakabilirsiniz." />
+          <button className="button primary" type="submit">Yorumu Gönder</button>
+        </form>
+
+        {reviews.length > 0 ? (
+          <div className="review-list">
+            {reviews.map((review: any) => (
+              <article className="review-card" key={review.id}>
+                <div className="review-top">
+                  <strong>{review.author_name || "Misafir"}</strong>
+                  <span>{formatReviewDate(review.created_at)}</span>
+                </div>
+                <p className="review-stars">{stars(review.rating)}</p>
+                <p>{review.body}</p>
+                <div className="feature-row">
+                  {review.halal_rating ? <span className="pill">Helal {review.halal_rating}/5</span> : null}
+                  {review.food_rating ? <span className="pill">Yemek {review.food_rating}/5</span> : null}
+                </div>
+                {review.owner_response ? (
+                  <div className="owner-response">
+                    <strong>İşletme yanıtı</strong>
+                    <p>{review.owner_response}</p>
+                  </div>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <span className="pill">İlk yorum</span>
+            <h3>Bu restoran için henüz yorum yok.</h3>
+            <p className="muted">Deneyimini paylaşarak diğer kullanıcılara yardımcı olabilirsin.</p>
           </div>
         )}
       </section>

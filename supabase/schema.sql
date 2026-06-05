@@ -104,6 +104,7 @@ create table public.reviews (
   id uuid primary key default uuid_generate_v4(),
   restaurant_id uuid not null references public.restaurants(id) on delete cascade,
   user_id uuid references auth.users(id) on delete set null,
+  author_name text,
   rating int not null check (rating between 1 and 5),
   halal_rating int check (halal_rating between 1 and 5),
   food_rating int check (food_rating between 1 and 5),

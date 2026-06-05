@@ -552,6 +552,99 @@ input[type="checkbox"] {
   margin-top: 6px;
 }
 
+.reviews-panel {
+  margin-top: 20px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-heading h2 {
+  margin: 10px 0 0;
+}
+
+.rating-summary {
+  display: grid;
+  gap: 2px;
+  min-width: 92px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--green-soft);
+  text-align: center;
+}
+
+.rating-summary strong {
+  color: var(--green-dark);
+  font-size: 24px;
+}
+
+.rating-summary span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.review-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.review-form .button {
+  width: fit-content;
+}
+
+.review-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.review-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.review-card p {
+  margin: 8px 0 0;
+}
+
+.review-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.review-top span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.review-stars {
+  color: var(--gold);
+  font-weight: 900;
+}
+
+.owner-response {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--green-soft);
+}
+
+.owner-response p {
+  margin: 4px 0 0;
+}
+
 @media (max-width: 800px) {
   .hero,
   .detail-hero,
@@ -564,6 +657,10 @@ input[type="checkbox"] {
   .menu-input-row,
   .menu-item {
     grid-template-columns: 1fr;
+  }
+
+  .section-heading {
+    display: grid;
   }
 
   .topbar {

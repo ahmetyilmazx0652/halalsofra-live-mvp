@@ -9,6 +9,11 @@ grant insert on public.certificates to anon, authenticated;
 grant select on public.certificates to anon, authenticated;
 grant insert on public.restaurant_photos to anon, authenticated;
 grant select on public.restaurant_photos to anon, authenticated;
+grant insert on public.reviews to anon, authenticated;
+grant select on public.reviews to anon, authenticated;
+
+alter table public.reviews
+add column if not exists author_name text;
 
 drop policy if exists "Public can submit pending restaurants" on public.restaurants;
 create policy "Public can submit pending restaurants"
@@ -374,3 +379,18 @@ on public.certificates
 for select
 to anon, authenticated
 using (status = 'pending');
+
+drop policy if exists "Public can add reviews for published restaurants" on public.reviews;
+create policy "Public can add reviews for published restaurants"
+on public.reviews
+for insert
+to anon, authenticated
+with check (
+  rating between 1 and 5
+  and exists (
+    select 1
+    from public.restaurants r
+    where r.id = restaurant_id
+      and r.status = 'published'
+  )
+);
