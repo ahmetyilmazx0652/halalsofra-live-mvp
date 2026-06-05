@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -38,25 +39,40 @@ async function getPendingRestaurants() {
 async function updateRestaurantStatus(formData: FormData) {
   "use server";
 
-  if (!hasSupabaseConfig || !supabase) return;
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
 
   const id = formData.get("id");
   const status = formData.get("status");
 
-  if (typeof id !== "string" || typeof status !== "string") return;
-  if (!["published", "rejected"].includes(status)) return;
+  if (typeof id !== "string" || typeof status !== "string") {
+    redirect("/admin?error=missing");
+  }
+  if (!["published", "rejected"].includes(status)) {
+    redirect("/admin?error=status");
+  }
 
-  await supabase
+  const result = await supabase
     .from("restaurants")
     .update({ status })
     .eq("id", id)
     .eq("status", "pending");
 
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);
+  }
+
   revalidatePath("/");
   revalidatePath("/admin");
+  redirect(`/admin?reviewed=${status}`);
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams
+}: {
+  searchParams?: { reviewed?: string; error?: string };
+}) {
   const pendingRestaurants = await getPendingRestaurants();
 
   return (
@@ -67,6 +83,12 @@ export default async function AdminPage() {
         <p className="muted">
           Canlı sürümde bu ekran sadece admin rolüne açık olacak.
         </p>
+        {searchParams?.reviewed ? (
+          <div className="notice success">İşlem tamamlandı: {searchParams.reviewed}</div>
+        ) : null}
+        {searchParams?.error ? (
+          <div className="notice error">İşlem yapılamadı: {decodeURIComponent(searchParams.error)}</div>
+        ) : null}
       </section>
 
       <section className="grid">
@@ -81,12 +103,12 @@ export default async function AdminPage() {
               <form action={updateRestaurantStatus}>
                 <input type="hidden" name="id" value={item.id} />
                 <input type="hidden" name="status" value="published" />
-                <button className="button primary">Onayla</button>
+                <button className="button primary" type="submit">Onayla</button>
               </form>
               <form action={updateRestaurantStatus}>
                 <input type="hidden" name="id" value={item.id} />
                 <input type="hidden" name="status" value="rejected" />
-                <button className="button">Reddet</button>
+                <button className="button" type="submit">Reddet</button>
               </form>
             </div>
           </article>
