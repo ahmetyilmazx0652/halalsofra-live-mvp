@@ -175,6 +175,34 @@ function cleanSearch(value: string) {
   return value.replace(/[%(),]/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function mapsSearchUrl(item: AdminRestaurant) {
+  const query = item.lat !== null && item.lng !== null
+    ? `${item.lat},${item.lng}`
+    : [item.name, item.address, item.cityName, item.countryName].filter(Boolean).join(", ");
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function telUrl(phone: string | null) {
+  if (!phone) return null;
+  const cleaned = phone.replace(/[^\d+]/g, "");
+  return cleaned ? `tel:${cleaned}` : null;
+}
+
+function mailUrl(email: string | null) {
+  if (!email) return null;
+  return `mailto:${email}`;
+}
+
+function missingChecks(item: AdminRestaurant) {
+  return [
+    item.phone ? null : "Telefon eksik",
+    item.photoUrl ? null : "Fotoğraf eksik",
+    item.hasCertificate ? null : "Sertifika eksik",
+    item.lat !== null && item.lng !== null ? null : "Koordinat eksik"
+  ].filter(Boolean) as string[];
+}
+
 function adminPasscode() {
   return process.env.ADMIN_PASSCODE?.trim() ?? "";
 }
@@ -551,11 +579,22 @@ export default async function AdminPage({
               {item.lat !== null && item.lng !== null ? <span>Koordinat var</span> : null}
               {item.hasCertificate ? <span>Sertifika var</span> : null}
             </div>
+            <div className="feature-row">
+              {missingChecks(item).map((label) => (
+                <span className="pill warning" key={label}>{label}</span>
+              ))}
+            </div>
             {item.description ? <p className="muted">{item.description}</p> : null}
             <div className="feature-row">
               {item.alcoholFree ? <span className="pill">Alkolsüz</span> : null}
               {item.prayerRoom ? <span className="pill">Mescid</span> : null}
               {item.familyFriendly ? <span className="pill">Aile dostu</span> : null}
+            </div>
+            <div className="detail-actions">
+              <a className="button" href={mapsSearchUrl(item)} target="_blank" rel="noreferrer">Haritada Kontrol Et</a>
+              {telUrl(item.phone) ? <a className="button" href={telUrl(item.phone) ?? undefined}>Ara</a> : null}
+              {mailUrl(item.email) ? <a className="button" href={mailUrl(item.email) ?? undefined}>E-posta</a> : null}
+              {item.certificateUrl ? <a className="button" href={item.certificateUrl} target="_blank" rel="noreferrer">Sertifika Aç</a> : null}
             </div>
             <details className="admin-edit">
               <summary>Yayın metnini düzelt</summary>
@@ -575,6 +614,8 @@ export default async function AdminPage({
                   <input name="certificate_body" defaultValue={item.certificateBody ?? ""} placeholder="Sertifika kurumu" />
                   <input name="certificate_number" defaultValue={item.certificateNumber ?? ""} placeholder="Sertifika numarası" />
                   <input name="certificate_url" defaultValue={item.certificateUrl ?? ""} placeholder="Sertifika PDF/resim linki" />
+                  <input name="lat" defaultValue={item.lat ?? ""} inputMode="decimal" placeholder="Enlem, örn. 52.5200" />
+                  <input name="lng" defaultValue={item.lng ?? ""} inputMode="decimal" placeholder="Boylam, örn. 13.4050" />
                 </div>
                 <textarea name="description" defaultValue={item.description ?? ""} placeholder="Kısa açıklama" />
                 <button className="button primary" type="submit">Düzeltmeyi Kaydet</button>
@@ -691,9 +732,21 @@ export default async function AdminPage({
               {item.hasCertificate ? <span>Sertifika var</span> : null}
             </div>
             <div className="feature-row">
+              {missingChecks(item).map((label) => (
+                <span className="pill warning" key={label}>{label}</span>
+              ))}
+            </div>
+            <div className="feature-row">
               {item.alcoholFree ? <span className="pill">Alkolsüz</span> : null}
               {item.prayerRoom ? <span className="pill">Mescid</span> : null}
               {item.familyFriendly ? <span className="pill">Aile dostu</span> : null}
+            </div>
+            <div className="detail-actions">
+              <a className="button" href={mapsSearchUrl(item)} target="_blank" rel="noreferrer">Haritada Kontrol Et</a>
+              <a className="button" href={`/restaurants/${item.slug}`}>Detayı Aç</a>
+              {telUrl(item.phone) ? <a className="button" href={telUrl(item.phone) ?? undefined}>Ara</a> : null}
+              {mailUrl(item.email) ? <a className="button" href={mailUrl(item.email) ?? undefined}>E-posta</a> : null}
+              {item.certificateUrl ? <a className="button" href={item.certificateUrl} target="_blank" rel="noreferrer">Sertifika Aç</a> : null}
             </div>
             <details className="admin-edit">
               <summary>Yayındaki bilgileri düzenle</summary>
@@ -713,6 +766,8 @@ export default async function AdminPage({
                   <input name="certificate_body" defaultValue={item.certificateBody ?? ""} placeholder="Sertifika kurumu" />
                   <input name="certificate_number" defaultValue={item.certificateNumber ?? ""} placeholder="Sertifika numarası" />
                   <input name="certificate_url" defaultValue={item.certificateUrl ?? ""} placeholder="Sertifika PDF/resim linki" />
+                  <input name="lat" defaultValue={item.lat ?? ""} inputMode="decimal" placeholder="Enlem, örn. 52.5200" />
+                  <input name="lng" defaultValue={item.lng ?? ""} inputMode="decimal" placeholder="Boylam, örn. 13.4050" />
                 </div>
                 <textarea name="description" defaultValue={item.description ?? ""} placeholder="Kısa açıklama" />
                 <div className="checks">
@@ -725,7 +780,6 @@ export default async function AdminPage({
               </form>
             </details>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <a className="button" href={`/restaurants/${item.slug}`}>Detayı Aç</a>
               <form action={archivePublishedRestaurant}>
                 <input type="hidden" name="id" value={item.id} />
                 <button className="button danger" type="submit">Yayından Kaldır</button>
