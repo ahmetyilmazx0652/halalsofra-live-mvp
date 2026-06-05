@@ -80,15 +80,21 @@ async function getPendingRestaurants() {
   return (result.data ?? []).map(mapRestaurant);
 }
 
-async function getPublishedRestaurants() {
+async function getPublishedRestaurants(query?: string) {
   if (!hasSupabaseConfig || !supabase) return [];
 
-  const result = await supabase
+  let request = supabase
     .from("restaurants")
     .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
-    .eq("status", "published")
+    .eq("status", "published");
+
+  if (query) {
+    request = request.or(`name.ilike.%${query}%,address.ilike.%${query}%,cuisine.ilike.%${query}%`);
+  }
+
+  const result = await request
     .order("updated_at", { ascending: false })
-    .limit(24);
+    .limit(query ? 60 : 24);
 
   if (result.error) return [];
   return (result.data ?? []).map(mapRestaurant);
@@ -104,6 +110,10 @@ function cleanCoordinate(value: FormDataEntryValue | null) {
 
   const coordinate = Number(text);
   return Number.isFinite(coordinate) ? coordinate : null;
+}
+
+function cleanSearch(value: string) {
+  return value.replace(/[%(),]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function adminPasscode() {
@@ -291,7 +301,7 @@ async function updateRestaurantStatus(formData: FormData) {
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; loggedIn?: string; error?: string };
+  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; loggedIn?: string; error?: string; q?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -326,9 +336,10 @@ export default async function AdminPage({
     );
   }
 
+  const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
   const [pendingRestaurants, publishedRestaurants] = await Promise.all([
     getPendingRestaurants(),
-    getPublishedRestaurants()
+    getPublishedRestaurants(publishedQuery)
   ]);
 
   return (
@@ -439,6 +450,16 @@ export default async function AdminPage({
         <p className="muted">
           Onaylanmış restoranlarda adres, açıklama, Grade, özellik ve sertifika bilgilerini sonradan düzeltebilirsin.
         </p>
+        <form className="form-grid" style={{ marginTop: 14 }}>
+          <input name="q" defaultValue={publishedQuery} placeholder="Yayındaki restoranlarda ara" />
+          <button className="button primary" type="submit">Ara</button>
+        </form>
+        {publishedQuery ? (
+          <div className="detail-actions">
+            <span className="pill">{publishedRestaurants.length} sonuç</span>
+            <a className="button" href="/admin">Aramayı Temizle</a>
+          </div>
+        ) : null}
       </section>
 
       <section className="grid">
