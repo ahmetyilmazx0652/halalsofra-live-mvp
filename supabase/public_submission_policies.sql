@@ -245,6 +245,33 @@ $$;
 
 grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, text, boolean, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
 
+drop function if exists public.archive_published_restaurant(uuid);
+
+create or replace function public.archive_published_restaurant(
+  target_restaurant_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.restaurants
+  set status = 'suspended',
+      is_featured = false,
+      updated_at = now()
+  where id = target_restaurant_id
+    and status = 'published';
+
+  update public.certificates
+  set status = 'archived'
+  where certificates.restaurant_id = target_restaurant_id
+    and status = 'approved';
+end;
+$$;
+
+grant execute on function public.archive_published_restaurant(uuid) to anon, authenticated;
+
 drop policy if exists "Public can add menu category for submitted restaurants" on public.menu_categories;
 create policy "Public can add menu category for submitted restaurants"
 on public.menu_categories

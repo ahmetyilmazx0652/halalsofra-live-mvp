@@ -298,10 +298,38 @@ async function updateRestaurantStatus(formData: FormData) {
   redirect(`/admin?reviewed=${status}`);
 }
 
+async function archivePublishedRestaurant(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
+
+  const id = cleanText(formData.get("id"));
+
+  if (!id) {
+    redirect("/admin?error=missing");
+  }
+
+  const result = await supabase.rpc("archive_published_restaurant", {
+    target_restaurant_id: id
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?archived=1");
+}
+
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; loggedIn?: string; error?: string; q?: string };
+  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; archived?: string; loggedIn?: string; error?: string; q?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -364,6 +392,9 @@ export default async function AdminPage({
         ) : null}
         {searchParams?.publishedSaved ? (
           <div className="notice success">Yayındaki restoran güncellendi.</div>
+        ) : null}
+        {searchParams?.archived ? (
+          <div className="notice success">Restoran yayından kaldırıldı.</div>
         ) : null}
         {searchParams?.error ? (
           <div className="notice error">İşlem yapılamadı: {decodeURIComponent(searchParams.error)}</div>
@@ -517,7 +548,13 @@ export default async function AdminPage({
                 <button className="button primary" type="submit">Canlı Kaydı Güncelle</button>
               </form>
             </details>
-            <a className="button" href={`/restaurants/${item.slug}`}>Detayı Aç</a>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <a className="button" href={`/restaurants/${item.slug}`}>Detayı Aç</a>
+              <form action={archivePublishedRestaurant}>
+                <input type="hidden" name="id" value={item.id} />
+                <button className="button danger" type="submit">Yayından Kaldır</button>
+              </form>
+            </div>
           </article>
         ))}
       </section>

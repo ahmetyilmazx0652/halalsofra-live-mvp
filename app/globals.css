@@ -83,6 +83,12 @@ a {
   border-color: var(--green);
 }
 
+.button.danger {
+  background: #fff5f5;
+  color: #9f1d1d;
+  border-color: rgba(159, 29, 29, 0.2);
+}
+
 .page {
   width: min(1120px, calc(100% - 32px));
   margin: 0 auto;
