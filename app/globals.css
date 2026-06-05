@@ -224,6 +224,38 @@ textarea {
   margin-bottom: 8px;
 }
 
+.notice {
+  margin: 12px 0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-weight: 700;
+}
+
+.notice.success {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.notice.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
 @media (max-width: 800px) {
   .hero,
   .filters,

@@ -1,9 +1,42 @@
-const pendingRestaurants = [
-  { name: "Mangal Restaurant", city: "Köln", owner: "Demo İşletme", status: "pending" },
-  { name: "Le Kebab Parisien", city: "Paris", owner: "Demo Owner", status: "pending" }
-];
+import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
-export default function AdminPage() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type PendingRestaurant = {
+  id: string;
+  name: string;
+  address: string;
+  phone: string | null;
+  status: string;
+  cityName: string;
+  countryName: string;
+};
+
+async function getPendingRestaurants() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("restaurants")
+    .select("id,name,address,phone,status,cities(name),countries(name)")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (result.error) return [];
+  return (result.data ?? []).map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    address: item.address,
+    phone: item.phone,
+    status: item.status,
+    cityName: item.cities?.[0]?.name ?? item.cities?.name ?? "Bilinmiyor",
+    countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor"
+  }));
+}
+
+export default async function AdminPage() {
+  const pendingRestaurants = await getPendingRestaurants();
+
   return (
     <main className="page">
       <section className="panel">
@@ -16,10 +49,12 @@ export default function AdminPage() {
 
       <section className="grid">
         {pendingRestaurants.map((item) => (
-          <article className="card" key={item.name}>
+          <article className="card" key={item.id}>
             <span className="pill">{item.status}</span>
             <h3>{item.name}</h3>
-            <p className="muted">{item.city} · {item.owner}</p>
+            <p className="muted">{item.countryName} · {item.cityName}</p>
+            <p>{item.address}</p>
+            {item.phone ? <p>{item.phone}</p> : null}
             <div style={{ display: "flex", gap: 8 }}>
               <button className="button primary">Onayla</button>
               <button className="button">Reddet</button>
@@ -27,6 +62,14 @@ export default function AdminPage() {
           </article>
         ))}
       </section>
+
+      {pendingRestaurants.length === 0 ? (
+        <section className="empty-state">
+          <span className="pill">Kuyruk boş</span>
+          <h2>Bekleyen başvuru yok.</h2>
+          <p className="muted">İşletme formundan gönderilen yeni restoranlar burada görünecek.</p>
+        </section>
+      ) : null}
     </main>
   );
 }
