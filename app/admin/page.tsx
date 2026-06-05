@@ -100,6 +100,20 @@ async function getPublishedRestaurants(query?: string) {
   return (result.data ?? []).map(mapRestaurant);
 }
 
+async function getArchivedRestaurants() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("restaurants")
+    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .eq("status", "suspended")
+    .order("updated_at", { ascending: false })
+    .limit(24);
+
+  if (result.error) return [];
+  return (result.data ?? []).map(mapRestaurant);
+}
+
 function cleanText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -326,10 +340,38 @@ async function archivePublishedRestaurant(formData: FormData) {
   redirect("/admin?archived=1");
 }
 
+async function restoreArchivedRestaurant(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
+
+  const id = cleanText(formData.get("id"));
+
+  if (!id) {
+    redirect("/admin?error=missing");
+  }
+
+  const result = await supabase.rpc("restore_archived_restaurant", {
+    target_restaurant_id: id
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?restored=1");
+}
+
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; archived?: string; loggedIn?: string; error?: string; q?: string };
+  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; error?: string; q?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -365,9 +407,10 @@ export default async function AdminPage({
   }
 
   const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
-  const [pendingRestaurants, publishedRestaurants] = await Promise.all([
+  const [pendingRestaurants, publishedRestaurants, archivedRestaurants] = await Promise.all([
     getPendingRestaurants(),
-    getPublishedRestaurants(publishedQuery)
+    getPublishedRestaurants(publishedQuery),
+    getArchivedRestaurants()
   ]);
 
   return (
@@ -395,6 +438,9 @@ export default async function AdminPage({
         ) : null}
         {searchParams?.archived ? (
           <div className="notice success">Restoran yayından kaldırıldı.</div>
+        ) : null}
+        {searchParams?.restored ? (
+          <div className="notice success">Restoran yeniden yayına alındı.</div>
         ) : null}
         {searchParams?.error ? (
           <div className="notice error">İşlem yapılamadı: {decodeURIComponent(searchParams.error)}</div>
@@ -564,6 +610,46 @@ export default async function AdminPage({
           <span className="pill">Canlı kayıt yok</span>
           <h2>Henüz yayında restoran yok.</h2>
           <p className="muted">Onaylanan restoranlar burada düzenlenebilir hale gelecek.</p>
+        </section>
+      ) : null}
+
+      <section className="panel" style={{ marginTop: 24 }}>
+        <span className="pill">Arşiv</span>
+        <h2>Yayından kaldırılan restoranlar.</h2>
+        <p className="muted">
+          Yanlışlıkla kaldırılan restoranları buradan tekrar yayına alabilirsin.
+        </p>
+      </section>
+
+      <section className="grid">
+        {archivedRestaurants.map((item) => (
+          <article className="card admin-card" key={item.id}>
+            <div className="card-top">
+              <span className="pill">{item.status}</span>
+              <span className="pill">Grade {item.halalGrade}</span>
+              <span className="pill">{item.subscriptionPlan}</span>
+            </div>
+            <h3>{item.name}</h3>
+            <p className="muted">{item.countryName} · {item.cityName}</p>
+            <p>{item.address}</p>
+            <div className="meta-list">
+              <span>{item.cuisine}</span>
+              {item.phone ? <span>{item.phone}</span> : null}
+              {item.openingHours ? <span>{item.openingHours}</span> : null}
+            </div>
+            <form action={restoreArchivedRestaurant}>
+              <input type="hidden" name="id" value={item.id} />
+              <button className="button primary" type="submit">Tekrar Yayına Al</button>
+            </form>
+          </article>
+        ))}
+      </section>
+
+      {archivedRestaurants.length === 0 ? (
+        <section className="empty-state">
+          <span className="pill">Arşiv boş</span>
+          <h2>Yayından kaldırılmış restoran yok.</h2>
+          <p className="muted">Canlıdan kaldırılan kayıtlar burada listelenecek.</p>
         </section>
       ) : null}
     </main>

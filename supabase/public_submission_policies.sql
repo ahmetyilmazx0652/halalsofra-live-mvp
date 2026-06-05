@@ -272,6 +272,39 @@ $$;
 
 grant execute on function public.archive_published_restaurant(uuid) to anon, authenticated;
 
+drop policy if exists "Public MVP admin can read suspended restaurants" on public.restaurants;
+create policy "Public MVP admin can read suspended restaurants"
+on public.restaurants
+for select
+to anon, authenticated
+using (status = 'suspended');
+
+drop function if exists public.restore_archived_restaurant(uuid);
+
+create or replace function public.restore_archived_restaurant(
+  target_restaurant_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.restaurants
+  set status = 'published',
+      updated_at = now()
+  where id = target_restaurant_id
+    and status = 'suspended';
+
+  update public.certificates
+  set status = 'approved'
+  where certificates.restaurant_id = target_restaurant_id
+    and status = 'archived';
+end;
+$$;
+
+grant execute on function public.restore_archived_restaurant(uuid) to anon, authenticated;
+
 drop policy if exists "Public can add menu category for submitted restaurants" on public.menu_categories;
 create policy "Public can add menu category for submitted restaurants"
 on public.menu_categories
