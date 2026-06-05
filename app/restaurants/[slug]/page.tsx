@@ -1,4 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
@@ -56,6 +57,66 @@ function instagramUrl(value: string | null) {
   return `https://www.instagram.com/${cleanValue.replace(/^@/, "")}`;
 }
 
+function plainDescription(value: string | null, name: string, cityName: string | null, countryName: string | null) {
+  const fallback = `${name} için helal durumu, menü, fiyat, adres ve yol tarifi bilgilerini HalalSofra'da incele.`;
+  const text = (value || fallback).replace(/\s+/g, " ").trim();
+  const location = [cityName, countryName].filter(Boolean).join(", ");
+  const suffix = location ? ` ${location}.` : "";
+  return `${text}${suffix}`.slice(0, 165);
+}
+
+export async function generateMetadata({
+  params
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  if (!hasSupabaseConfig || !supabase) {
+    return {
+      title: "Restoran bulunamadı",
+      robots: { index: false, follow: false }
+    };
+  }
+
+  const result = await supabase
+    .from("restaurants")
+    .select("name,slug,description,address,halal_grade,cities(name),countries(name)")
+    .eq("slug", params.slug)
+    .eq("status", "published")
+    .single();
+
+  if (result.error || !result.data) {
+    return {
+      title: "Restoran bulunamadı",
+      robots: { index: false, follow: false }
+    };
+  }
+
+  const restaurant: any = result.data;
+  const country = restaurant.countries?.[0] ?? restaurant.countries;
+  const city = restaurant.cities?.[0] ?? restaurant.cities;
+  const title = `${restaurant.name} - Grade ${restaurant.halal_grade} Helal Restoran`;
+  const description = plainDescription(
+    restaurant.description,
+    restaurant.name,
+    city?.name ?? null,
+    country?.name ?? null
+  );
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/restaurants/${restaurant.slug}`
+    },
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      url: `/restaurants/${restaurant.slug}`
+    }
+  };
+}
+
 export default async function RestaurantDetailPage({
   params
 }: {
@@ -103,9 +164,32 @@ export default async function RestaurantDetailPage({
     .eq("status", "approved")
     .order("valid_until", { ascending: false });
   const certificate: any = certificateResult.data?.[0] ?? null;
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    name: restaurant.name,
+    description: restaurant.description || undefined,
+    address: restaurant.address,
+    telephone: restaurant.phone || undefined,
+    email: restaurant.email || undefined,
+    servesCuisine: restaurant.cuisine,
+    url: `https://halalsofra-live-mvp.vercel.app/restaurants/${restaurant.slug}`,
+    priceRange: priceLabel(restaurant.price_level),
+    geo: restaurant.lat !== null && restaurant.lng !== null
+      ? {
+          "@type": "GeoCoordinates",
+          latitude: restaurant.lat,
+          longitude: restaurant.lng
+        }
+      : undefined
+  };
 
   return (
     <main className="page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <section className="detail-hero">
         <div className="panel">
           <div className="card-top">

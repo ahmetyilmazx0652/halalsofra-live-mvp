@@ -1,9 +1,31 @@
 import "./globals.css";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-export const metadata = {
-  title: "HalalSofra",
-  description: "Avrupa'da helal restoran keşif ve işletme platformu"
+const siteUrl = "https://halalsofra-live-mvp.vercel.app";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "HalalSofra | Avrupa Helal Restoran Rehberi",
+    template: "%s | HalalSofra"
+  },
+  description: "Avrupa'da helal restoran, kafe, fırın, market ve kasapları şehir, sertifika, menü, fiyat ve konum bilgileriyle keşfet.",
+  alternates: {
+    canonical: "/"
+  },
+  openGraph: {
+    title: "HalalSofra | Avrupa Helal Restoran Rehberi",
+    description: "Ülke seç, şehir seç, güvenilir helal mekan bul.",
+    url: siteUrl,
+    siteName: "HalalSofra",
+    locale: "tr_TR",
+    type: "website"
+  },
+  robots: {
+    index: true,
+    follow: true
+  }
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
