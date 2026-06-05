@@ -179,6 +179,30 @@ input[type="checkbox"] {
   box-shadow: 0 0 0 2px rgba(196, 154, 60, 0.12);
 }
 
+.admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-top,
+.feature-row,
+.meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meta-list {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.meta-list span:not(:last-child)::after {
+  content: "·";
+  margin-left: 8px;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;

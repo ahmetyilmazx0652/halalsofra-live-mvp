@@ -10,6 +10,15 @@ type PendingRestaurant = {
   name: string;
   address: string;
   phone: string | null;
+  email: string | null;
+  cuisine: string;
+  description: string | null;
+  halalGrade: string;
+  subscriptionPlan: string;
+  alcoholFree: boolean;
+  prayerRoom: boolean;
+  familyFriendly: boolean;
+  googlePlaceId: string | null;
   status: string;
   cityName: string;
   countryName: string;
@@ -20,7 +29,7 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,name,address,phone,status,cities(name),countries(name)")
+    .select("id,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -30,6 +39,15 @@ async function getPendingRestaurants() {
     name: item.name,
     address: item.address,
     phone: item.phone,
+    email: item.email,
+    cuisine: item.cuisine,
+    description: item.description,
+    halalGrade: item.halal_grade,
+    subscriptionPlan: item.subscription_plan,
+    alcoholFree: Boolean(item.alcohol_free),
+    prayerRoom: Boolean(item.prayer_room),
+    familyFriendly: Boolean(item.family_friendly),
+    googlePlaceId: item.google_place_id,
     status: item.status,
     cityName: item.cities?.[0]?.name ?? item.cities?.name ?? "Bilinmiyor",
     countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor"
@@ -92,12 +110,27 @@ export default async function AdminPage({
 
       <section className="grid">
         {pendingRestaurants.map((item) => (
-          <article className="card" key={item.id}>
-            <span className="pill">{item.status}</span>
+          <article className="card admin-card" key={item.id}>
+            <div className="card-top">
+              <span className="pill">{item.status}</span>
+              <span className="pill">Grade {item.halalGrade}</span>
+              <span className="pill">{item.subscriptionPlan}</span>
+            </div>
             <h3>{item.name}</h3>
             <p className="muted">{item.countryName} · {item.cityName}</p>
             <p>{item.address}</p>
-            {item.phone ? <p>{item.phone}</p> : null}
+            <div className="meta-list">
+              <span>{item.cuisine}</span>
+              {item.phone ? <span>{item.phone}</span> : null}
+              {item.email ? <span>{item.email}</span> : null}
+              {item.googlePlaceId ? <span>Place ID var</span> : null}
+            </div>
+            {item.description ? <p className="muted">{item.description}</p> : null}
+            <div className="feature-row">
+              {item.alcoholFree ? <span className="pill">Alkolsüz</span> : null}
+              {item.prayerRoom ? <span className="pill">Mescid</span> : null}
+              {item.familyFriendly ? <span className="pill">Aile dostu</span> : null}
+            </div>
             <div style={{ display: "flex", gap: 8 }}>
               <form action={updateRestaurantStatus}>
                 <input type="hidden" name="id" value={item.id} />
