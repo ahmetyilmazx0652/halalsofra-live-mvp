@@ -138,6 +138,89 @@ $$;
 
 grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text) to anon, authenticated;
 
+create or replace function public.update_published_restaurant(
+  target_restaurant_id uuid,
+  next_name text,
+  next_address text,
+  next_phone text,
+  next_email text,
+  next_description text,
+  next_halal_grade text,
+  next_alcohol_free boolean,
+  next_prayer_room boolean,
+  next_family_friendly boolean,
+  next_certificate_body text,
+  next_certificate_number text,
+  next_certificate_url text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  has_certificate_update boolean;
+begin
+  if next_halal_grade not in ('A', 'B', 'C') then
+    raise exception 'Invalid halal grade: %', next_halal_grade;
+  end if;
+
+  update public.restaurants
+  set name = coalesce(nullif(trim(next_name), ''), name),
+      address = coalesce(nullif(trim(next_address), ''), address),
+      phone = nullif(trim(next_phone), ''),
+      email = nullif(trim(next_email), ''),
+      description = nullif(trim(next_description), ''),
+      halal_grade = next_halal_grade::halal_grade,
+      alcohol_free = coalesce(next_alcohol_free, false),
+      prayer_room = coalesce(next_prayer_room, false),
+      family_friendly = coalesce(next_family_friendly, false),
+      updated_at = now()
+  where id = target_restaurant_id
+    and status = 'published';
+
+  has_certificate_update =
+    nullif(trim(coalesce(next_certificate_body, '')), '') is not null
+    or nullif(trim(coalesce(next_certificate_number, '')), '') is not null
+    or nullif(trim(coalesce(next_certificate_url, '')), '') is not null;
+
+  if has_certificate_update then
+    update public.certificates
+    set body = coalesce(nullif(trim(next_certificate_body), ''), body),
+        certificate_number = nullif(trim(next_certificate_number), ''),
+        storage_path = nullif(trim(next_certificate_url), ''),
+        status = 'approved'
+    where id = (
+      select c.id
+      from public.certificates c
+      where c.restaurant_id = target_restaurant_id
+        and c.status = 'approved'
+      order by c.created_at desc
+      limit 1
+    );
+
+    if not found then
+      insert into public.certificates (
+        restaurant_id,
+        body,
+        certificate_number,
+        storage_path,
+        status
+      )
+      values (
+        target_restaurant_id,
+        coalesce(nullif(trim(next_certificate_body), ''), 'İşletme beyanı'),
+        nullif(trim(next_certificate_number), ''),
+        nullif(trim(next_certificate_url), ''),
+        'approved'
+      );
+    end if;
+  end if;
+end;
+$$;
+
+grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text) to anon, authenticated;
+
 drop policy if exists "Public can add menu category for submitted restaurants" on public.menu_categories;
 create policy "Public can add menu category for submitted restaurants"
 on public.menu_categories

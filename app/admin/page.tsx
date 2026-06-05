@@ -5,8 +5,9 @@ import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type PendingRestaurant = {
+type AdminRestaurant = {
   id: string;
+  slug: string;
   name: string;
   address: string;
   phone: string | null;
@@ -28,18 +29,10 @@ type PendingRestaurant = {
   countryName: string;
 };
 
-async function getPendingRestaurants() {
-  if (!hasSupabaseConfig || !supabase) return [];
-
-  const result = await supabase
-    .from("restaurants")
-    .select("id,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  if (result.error) return [];
-  return (result.data ?? []).map((item: any) => ({
+function mapRestaurant(item: any): AdminRestaurant {
+  return {
     id: item.id,
+    slug: item.slug,
     name: item.name,
     address: item.address,
     phone: item.phone,
@@ -59,7 +52,34 @@ async function getPendingRestaurants() {
     status: item.status,
     cityName: item.cities?.[0]?.name ?? item.cities?.name ?? "Bilinmiyor",
     countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor"
-  }));
+  };
+}
+
+async function getPendingRestaurants() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("restaurants")
+    .select("id,slug,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (result.error) return [];
+  return (result.data ?? []).map(mapRestaurant);
+}
+
+async function getPublishedRestaurants() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("restaurants")
+    .select("id,slug,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .eq("status", "published")
+    .order("updated_at", { ascending: false })
+    .limit(24);
+
+  if (result.error) return [];
+  return (result.data ?? []).map(mapRestaurant);
 }
 
 function cleanText(value: FormDataEntryValue | null) {
@@ -104,6 +124,48 @@ async function updatePendingRestaurant(formData: FormData) {
   redirect("/admin?saved=1");
 }
 
+async function updatePublishedRestaurant(formData: FormData) {
+  "use server";
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
+
+  const id = cleanText(formData.get("id"));
+  const halalGrade = cleanText(formData.get("halal_grade")) || "B";
+
+  if (!id) {
+    redirect("/admin?error=missing");
+  }
+  if (!["A", "B", "C"].includes(halalGrade)) {
+    redirect("/admin?error=grade");
+  }
+
+  const result = await supabase.rpc("update_published_restaurant", {
+    target_restaurant_id: id,
+    next_name: cleanText(formData.get("name")),
+    next_address: cleanText(formData.get("address")),
+    next_phone: cleanText(formData.get("phone")),
+    next_email: cleanText(formData.get("email")),
+    next_description: cleanText(formData.get("description")),
+    next_halal_grade: halalGrade,
+    next_alcohol_free: formData.get("alcohol_free") === "on",
+    next_prayer_room: formData.get("prayer_room") === "on",
+    next_family_friendly: formData.get("family_friendly") === "on",
+    next_certificate_body: cleanText(formData.get("certificate_body")),
+    next_certificate_number: cleanText(formData.get("certificate_number")),
+    next_certificate_url: cleanText(formData.get("certificate_url"))
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?publishedSaved=1");
+}
+
 async function updateRestaurantStatus(formData: FormData) {
   "use server";
 
@@ -138,9 +200,12 @@ async function updateRestaurantStatus(formData: FormData) {
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; saved?: string; error?: string };
+  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; error?: string };
 }) {
-  const pendingRestaurants = await getPendingRestaurants();
+  const [pendingRestaurants, publishedRestaurants] = await Promise.all([
+    getPendingRestaurants(),
+    getPublishedRestaurants()
+  ]);
 
   return (
     <main className="page">
@@ -155,6 +220,9 @@ export default async function AdminPage({
         ) : null}
         {searchParams?.saved ? (
           <div className="notice success">Başvuru bilgileri güncellendi.</div>
+        ) : null}
+        {searchParams?.publishedSaved ? (
+          <div className="notice success">Yayındaki restoran güncellendi.</div>
         ) : null}
         {searchParams?.error ? (
           <div className="notice error">İşlem yapılamadı: {decodeURIComponent(searchParams.error)}</div>
@@ -228,6 +296,77 @@ export default async function AdminPage({
           <span className="pill">Kuyruk boş</span>
           <h2>Bekleyen başvuru yok.</h2>
           <p className="muted">İşletme formundan gönderilen yeni restoranlar burada görünecek.</p>
+        </section>
+      ) : null}
+
+      <section className="panel" style={{ marginTop: 24 }}>
+        <span className="pill">Yayındaki Restoranlar</span>
+        <h2>Canlı kayıtları düzenle.</h2>
+        <p className="muted">
+          Onaylanmış restoranlarda adres, açıklama, Grade, özellik ve sertifika bilgilerini sonradan düzeltebilirsin.
+        </p>
+      </section>
+
+      <section className="grid">
+        {publishedRestaurants.map((item) => (
+          <article className="card admin-card" key={item.id}>
+            <div className="card-top">
+              <span className="pill">{item.status}</span>
+              <span className="pill">Grade {item.halalGrade}</span>
+              <span className="pill">{item.subscriptionPlan}</span>
+            </div>
+            <h3>{item.name}</h3>
+            <p className="muted">{item.countryName} · {item.cityName}</p>
+            <p>{item.address}</p>
+            <div className="meta-list">
+              <span>{item.cuisine}</span>
+              {item.phone ? <span>{item.phone}</span> : null}
+              {item.email ? <span>{item.email}</span> : null}
+              {item.googlePlaceId ? <span>Place ID var</span> : null}
+              {item.hasCertificate ? <span>Sertifika var</span> : null}
+            </div>
+            <div className="feature-row">
+              {item.alcoholFree ? <span className="pill">Alkolsüz</span> : null}
+              {item.prayerRoom ? <span className="pill">Mescid</span> : null}
+              {item.familyFriendly ? <span className="pill">Aile dostu</span> : null}
+            </div>
+            <details className="admin-edit">
+              <summary>Yayındaki bilgileri düzenle</summary>
+              <form action={updatePublishedRestaurant}>
+                <input type="hidden" name="id" value={item.id} />
+                <div className="form-grid">
+                  <input name="name" defaultValue={item.name} placeholder="Restoran adı" />
+                  <input name="address" defaultValue={item.address} placeholder="Adres" />
+                  <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
+                  <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
+                  <select name="halal_grade" defaultValue={item.halalGrade}>
+                    <option value="A">Grade A</option>
+                    <option value="B">Grade B</option>
+                    <option value="C">Grade C</option>
+                  </select>
+                  <input name="certificate_body" defaultValue={item.certificateBody ?? ""} placeholder="Sertifika kurumu" />
+                  <input name="certificate_number" defaultValue={item.certificateNumber ?? ""} placeholder="Sertifika numarası" />
+                  <input name="certificate_url" defaultValue={item.certificateUrl ?? ""} placeholder="Sertifika PDF/resim linki" />
+                </div>
+                <textarea name="description" defaultValue={item.description ?? ""} placeholder="Kısa açıklama" />
+                <div className="checks">
+                  <label><input name="alcohol_free" type="checkbox" defaultChecked={item.alcoholFree} /> Alkolsüz</label>
+                  <label><input name="prayer_room" type="checkbox" defaultChecked={item.prayerRoom} /> Mescid var</label>
+                  <label><input name="family_friendly" type="checkbox" defaultChecked={item.familyFriendly} /> Aile dostu</label>
+                </div>
+                <button className="button primary" type="submit">Canlı Kaydı Güncelle</button>
+              </form>
+            </details>
+            <a className="button" href={`/restaurants/${item.slug}`}>Detayı Aç</a>
+          </article>
+        ))}
+      </section>
+
+      {publishedRestaurants.length === 0 ? (
+        <section className="empty-state">
+          <span className="pill">Canlı kayıt yok</span>
+          <h2>Henüz yayında restoran yok.</h2>
+          <p className="muted">Onaylanan restoranlar burada düzenlenebilir hale gelecek.</p>
         </section>
       ) : null}
     </main>
