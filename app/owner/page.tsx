@@ -170,6 +170,7 @@ export default async function OwnerPage({
   searchParams?: { submitted?: string; error?: string };
 }) {
   const cities = await getCities();
+  const submitted = searchParams?.submitted === "1";
 
   return (
     <main className="page">
@@ -201,12 +202,36 @@ export default async function OwnerPage({
         <p className="muted">
           Zorunlu alanlar: restoran adı, ülke/şehir ve tam adres. Menü, sertifika, telefon ve diğer bilgiler opsiyoneldir.
         </p>
-        {searchParams?.submitted ? (
-          <div className="notice success">Başvuru alındı. Admin onayından sonra yayına çıkacak.</div>
-        ) : null}
         {searchParams?.error ? (
           <div className="notice error">Başvuru kaydedilemedi: {decodeURIComponent(searchParams.error)}</div>
         ) : null}
+        {submitted ? (
+          <div className="submission-status">
+            <span className="pill">Başvuru alındı</span>
+            <h3>Restoranın onay kuyruğuna eklendi.</h3>
+            <p className="muted">
+              Bilgiler admin kontrolünden sonra yayına alınır. Sertifika, menü ve adres bilgileri eksikse admin yayın metnini düzeltebilir.
+            </p>
+            <div className="status-steps">
+              <div>
+                <strong>1</strong>
+                <span>Başvuru kaydedildi</span>
+              </div>
+              <div>
+                <strong>2</strong>
+                <span>Admin kontrolü</span>
+              </div>
+              <div>
+                <strong>3</strong>
+                <span>Yayına alma</span>
+              </div>
+            </div>
+            <div className="detail-actions">
+              <a className="button primary" href="/">Ana Sayfaya Dön</a>
+              <a className="button" href="/owner">Yeni Başvuru Ekle</a>
+            </div>
+          </div>
+        ) : (
         <form action={submitRestaurant}>
           <div className="form-grid">
             <input name="name" placeholder="Restoran adı (zorunlu)" required />
@@ -278,6 +303,7 @@ export default async function OwnerPage({
           </div>
           <button className="button primary" style={{ marginTop: 12 }}>Başvuruyu Gönder</button>
         </form>
+        )}
       </section>
     </main>
   );

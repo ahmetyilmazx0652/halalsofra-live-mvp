@@ -299,6 +299,51 @@ input[type="checkbox"] {
   color: #991b1b;
 }
 
+.submission-status {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fff, var(--green-soft));
+}
+
+.submission-status h3,
+.submission-status p {
+  margin: 0;
+}
+
+.status-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.status-steps div {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+}
+
+.status-steps strong {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+}
+
+.status-steps span {
+  color: var(--green-dark);
+  font-weight: 800;
+}
+
 .checks {
   display: flex;
   flex-wrap: wrap;
@@ -451,6 +496,7 @@ input[type="checkbox"] {
   .grid,
   .plans,
   .form-grid,
+  .status-steps,
   .menu-input-row,
   .menu-item {
     grid-template-columns: 1fr;
