@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,27 @@ async function getPendingRestaurants() {
   }));
 }
 
+async function updateRestaurantStatus(formData: FormData) {
+  "use server";
+
+  if (!hasSupabaseConfig || !supabase) return;
+
+  const id = formData.get("id");
+  const status = formData.get("status");
+
+  if (typeof id !== "string" || typeof status !== "string") return;
+  if (!["published", "rejected"].includes(status)) return;
+
+  await supabase
+    .from("restaurants")
+    .update({ status })
+    .eq("id", id)
+    .eq("status", "pending");
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+}
+
 export default async function AdminPage() {
   const pendingRestaurants = await getPendingRestaurants();
 
@@ -56,8 +78,16 @@ export default async function AdminPage() {
             <p>{item.address}</p>
             {item.phone ? <p>{item.phone}</p> : null}
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="button primary">Onayla</button>
-              <button className="button">Reddet</button>
+              <form action={updateRestaurantStatus}>
+                <input type="hidden" name="id" value={item.id} />
+                <input type="hidden" name="status" value="published" />
+                <button className="button primary">Onayla</button>
+              </form>
+              <form action={updateRestaurantStatus}>
+                <input type="hidden" name="id" value={item.id} />
+                <input type="hidden" name="status" value="rejected" />
+                <button className="button">Reddet</button>
+              </form>
             </div>
           </article>
         ))}
