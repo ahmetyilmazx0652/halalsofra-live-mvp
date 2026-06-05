@@ -20,6 +20,9 @@ type PendingRestaurant = {
   familyFriendly: boolean;
   googlePlaceId: string | null;
   hasCertificate: boolean;
+  certificateBody: string | null;
+  certificateNumber: string | null;
+  certificateUrl: string | null;
   status: string;
   cityName: string;
   countryName: string;
@@ -30,7 +33,7 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name),certificates(id,status,storage_path)")
+    .select("id,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -50,10 +53,55 @@ async function getPendingRestaurants() {
     familyFriendly: Boolean(item.family_friendly),
     googlePlaceId: item.google_place_id,
     hasCertificate: (item.certificates ?? []).length > 0,
+    certificateBody: item.certificates?.[0]?.body ?? null,
+    certificateNumber: item.certificates?.[0]?.certificate_number ?? null,
+    certificateUrl: item.certificates?.[0]?.storage_path ?? null,
     status: item.status,
     cityName: item.cities?.[0]?.name ?? item.cities?.name ?? "Bilinmiyor",
     countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor"
   }));
+}
+
+function cleanText(value: FormDataEntryValue | null) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+async function updatePendingRestaurant(formData: FormData) {
+  "use server";
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
+
+  const id = cleanText(formData.get("id"));
+  const halalGrade = cleanText(formData.get("halal_grade")) || "B";
+
+  if (!id) {
+    redirect("/admin?error=missing");
+  }
+  if (!["A", "B", "C"].includes(halalGrade)) {
+    redirect("/admin?error=grade");
+  }
+
+  const result = await supabase.rpc("update_pending_restaurant", {
+    target_restaurant_id: id,
+    next_name: cleanText(formData.get("name")),
+    next_address: cleanText(formData.get("address")),
+    next_phone: cleanText(formData.get("phone")),
+    next_email: cleanText(formData.get("email")),
+    next_description: cleanText(formData.get("description")),
+    next_halal_grade: halalGrade,
+    next_certificate_body: cleanText(formData.get("certificate_body")),
+    next_certificate_number: cleanText(formData.get("certificate_number")),
+    next_certificate_url: cleanText(formData.get("certificate_url"))
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);
+  }
+
+  revalidatePath("/admin");
+  redirect("/admin?saved=1");
 }
 
 async function updateRestaurantStatus(formData: FormData) {
@@ -90,7 +138,7 @@ async function updateRestaurantStatus(formData: FormData) {
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; error?: string };
+  searchParams?: { reviewed?: string; saved?: string; error?: string };
 }) {
   const pendingRestaurants = await getPendingRestaurants();
 
@@ -104,6 +152,9 @@ export default async function AdminPage({
         </p>
         {searchParams?.reviewed ? (
           <div className="notice success">İşlem tamamlandı: {searchParams.reviewed}</div>
+        ) : null}
+        {searchParams?.saved ? (
+          <div className="notice success">Başvuru bilgileri güncellendi.</div>
         ) : null}
         {searchParams?.error ? (
           <div className="notice error">İşlem yapılamadı: {decodeURIComponent(searchParams.error)}</div>
@@ -134,6 +185,28 @@ export default async function AdminPage({
               {item.prayerRoom ? <span className="pill">Mescid</span> : null}
               {item.familyFriendly ? <span className="pill">Aile dostu</span> : null}
             </div>
+            <details className="admin-edit">
+              <summary>Yayın metnini düzelt</summary>
+              <form action={updatePendingRestaurant}>
+                <input type="hidden" name="id" value={item.id} />
+                <div className="form-grid">
+                  <input name="name" defaultValue={item.name} placeholder="Restoran adı" />
+                  <input name="address" defaultValue={item.address} placeholder="Adres" />
+                  <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
+                  <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
+                  <select name="halal_grade" defaultValue={item.halalGrade}>
+                    <option value="A">Grade A</option>
+                    <option value="B">Grade B</option>
+                    <option value="C">Grade C</option>
+                  </select>
+                  <input name="certificate_body" defaultValue={item.certificateBody ?? ""} placeholder="Sertifika kurumu" />
+                  <input name="certificate_number" defaultValue={item.certificateNumber ?? ""} placeholder="Sertifika numarası" />
+                  <input name="certificate_url" defaultValue={item.certificateUrl ?? ""} placeholder="Sertifika PDF/resim linki" />
+                </div>
+                <textarea name="description" defaultValue={item.description ?? ""} placeholder="Kısa açıklama" />
+                <button className="button primary" type="submit">Düzeltmeyi Kaydet</button>
+              </form>
+            </details>
             <div style={{ display: "flex", gap: 8 }}>
               <form action={updateRestaurantStatus}>
                 <input type="hidden" name="id" value={item.id} />

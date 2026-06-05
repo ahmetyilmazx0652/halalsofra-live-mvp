@@ -196,6 +196,23 @@ input[type="checkbox"] {
   gap: 8px;
 }
 
+.admin-edit {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.admin-edit summary {
+  cursor: pointer;
+  color: var(--green-dark);
+  font-weight: 800;
+}
+
+.admin-edit form {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
 .card-top,
 .feature-row,
 .meta-list {
