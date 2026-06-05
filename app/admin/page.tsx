@@ -1,9 +1,13 @@
+import { createHash } from "crypto";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+const ADMIN_COOKIE = "halalsofra_admin";
 
 type AdminRestaurant = {
   id: string;
@@ -98,8 +102,64 @@ function cleanCoordinate(value: FormDataEntryValue | null) {
   return Number.isFinite(coordinate) ? coordinate : null;
 }
 
+function adminPasscode() {
+  return process.env.ADMIN_PASSCODE?.trim() ?? "";
+}
+
+function adminSessionValue() {
+  const passcode = adminPasscode();
+  if (!passcode) return "";
+  return createHash("sha256").update(passcode).digest("hex");
+}
+
+function isAdminUnlocked() {
+  const sessionValue = adminSessionValue();
+  if (!sessionValue) return false;
+  return cookies().get(ADMIN_COOKIE)?.value === sessionValue;
+}
+
+function requireAdmin() {
+  if (!isAdminUnlocked()) {
+    redirect("/admin?error=auth");
+  }
+}
+
+async function adminLogin(formData: FormData) {
+  "use server";
+
+  const passcode = adminPasscode();
+  const attempt = cleanText(formData.get("passcode"));
+
+  if (!passcode) {
+    redirect("/admin?error=no-passcode");
+  }
+
+  if (attempt !== passcode) {
+    redirect("/admin?error=bad-passcode");
+  }
+
+  cookies().set(ADMIN_COOKIE, adminSessionValue(), {
+    httpOnly: true,
+    maxAge: 60 * 60 * 12,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production"
+  });
+
+  redirect("/admin?loggedIn=1");
+}
+
+async function adminLogout() {
+  "use server";
+
+  cookies().delete(ADMIN_COOKIE);
+  redirect("/admin");
+}
+
 async function updatePendingRestaurant(formData: FormData) {
   "use server";
+
+  requireAdmin();
 
   if (!hasSupabaseConfig || !supabase) {
     redirect("/admin?error=config");
@@ -142,6 +202,8 @@ async function updatePendingRestaurant(formData: FormData) {
 
 async function updatePublishedRestaurant(formData: FormData) {
   "use server";
+
+  requireAdmin();
 
   if (!hasSupabaseConfig || !supabase) {
     redirect("/admin?error=config");
@@ -189,6 +251,8 @@ async function updatePublishedRestaurant(formData: FormData) {
 async function updateRestaurantStatus(formData: FormData) {
   "use server";
 
+  requireAdmin();
+
   if (!hasSupabaseConfig || !supabase) {
     redirect("/admin?error=config");
   }
@@ -220,8 +284,41 @@ async function updateRestaurantStatus(formData: FormData) {
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; error?: string };
+  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; loggedIn?: string; error?: string };
 }) {
+  const unlocked = isAdminUnlocked();
+
+  if (!unlocked) {
+    const needsPasscode = searchParams?.error === "no-passcode";
+    const wrongPasscode = searchParams?.error === "bad-passcode";
+    const authError = searchParams?.error === "auth";
+
+    return (
+      <main className="page">
+        <section className="panel">
+          <span className="pill">Admin</span>
+          <h1>Admin girişi.</h1>
+          <p className="muted">
+            Restoran onayı, yayın düzenleme ve sertifika kontrolü için yönetici şifresi gerekiyor.
+          </p>
+          {needsPasscode ? (
+            <div className="notice error">Vercel Environment Variables içine ADMIN_PASSCODE eklenmeli.</div>
+          ) : null}
+          {wrongPasscode ? (
+            <div className="notice error">Şifre yanlış. Tekrar dene.</div>
+          ) : null}
+          {authError ? (
+            <div className="notice error">Bu işlem için admin girişi gerekiyor.</div>
+          ) : null}
+          <form action={adminLogin} className="form-grid" style={{ marginTop: 24 }}>
+            <input name="passcode" type="password" placeholder="Admin şifresi" autoComplete="current-password" />
+            <button className="button primary" type="submit">Giriş Yap</button>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
   const [pendingRestaurants, publishedRestaurants] = await Promise.all([
     getPendingRestaurants(),
     getPublishedRestaurants()
@@ -233,8 +330,14 @@ export default async function AdminPage({
         <span className="pill">Admin</span>
         <h1>Restoran ve sertifika onay kuyruğu.</h1>
         <p className="muted">
-          Canlı sürümde bu ekran sadece admin rolüne açık olacak.
+          Bu ekran şifreli admin oturumu ile korunuyor.
         </p>
+        <form action={adminLogout}>
+          <button className="button" type="submit">Çıkış Yap</button>
+        </form>
+        {searchParams?.loggedIn ? (
+          <div className="notice success">Admin girişi tamamlandı.</div>
+        ) : null}
         {searchParams?.reviewed ? (
           <div className="notice success">İşlem tamamlandı: {searchParams.reviewed}</div>
         ) : null}
