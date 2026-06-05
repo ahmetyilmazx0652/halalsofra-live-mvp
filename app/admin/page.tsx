@@ -53,11 +53,10 @@ async function updateRestaurantStatus(formData: FormData) {
     redirect("/admin?error=status");
   }
 
-  const result = await supabase
-    .from("restaurants")
-    .update({ status })
-    .eq("id", id)
-    .eq("status", "pending");
+  const result = await supabase.rpc("review_restaurant", {
+    restaurant_id: id,
+    next_status: status
+  });
 
   if (result.error) {
     redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);

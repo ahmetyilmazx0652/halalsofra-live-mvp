@@ -28,3 +28,24 @@ for update
 to anon, authenticated
 using (status = 'pending')
 with check (status in ('published', 'rejected'));
+
+create or replace function public.review_restaurant(restaurant_id uuid, next_status text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if next_status not in ('published', 'rejected') then
+    raise exception 'Invalid restaurant status: %', next_status;
+  end if;
+
+  update public.restaurants
+  set status = next_status::restaurant_status,
+      updated_at = now()
+  where id = restaurant_id
+    and status = 'pending';
+end;
+$$;
+
+grant execute on function public.review_restaurant(uuid, text) to anon, authenticated;
