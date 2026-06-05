@@ -111,6 +111,7 @@ create table public.reviews (
   service_rating int check (service_rating between 1 and 5),
   body text,
   owner_response text,
+  status text not null default 'pending',
   created_at timestamptz not null default now()
 );
 
@@ -153,7 +154,7 @@ create policy "Public can read restaurant photos" on public.restaurant_photos fo
 create policy "Public can read menu categories" on public.menu_categories for select using (true);
 create policy "Public can read menu items" on public.menu_items for select using (true);
 create policy "Public can read approved certificates" on public.certificates for select using (status = 'approved');
-create policy "Public can read reviews" on public.reviews for select using (true);
+create policy "Public can read approved reviews" on public.reviews for select using (status = 'approved');
 
 create policy "Owners can manage profile" on public.owner_profiles
   for all using (auth.uid() = id) with check (auth.uid() = id);

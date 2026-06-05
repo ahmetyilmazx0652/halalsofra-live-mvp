@@ -15,6 +15,13 @@ grant select on public.reviews to anon, authenticated;
 alter table public.reviews
 add column if not exists author_name text;
 
+alter table public.reviews
+add column if not exists status text not null default 'pending';
+
+update public.reviews
+set status = 'pending'
+where status is null;
+
 drop policy if exists "Public can submit pending restaurants" on public.restaurants;
 create policy "Public can submit pending restaurants"
 on public.restaurants
@@ -386,7 +393,8 @@ on public.reviews
 for insert
 to anon, authenticated
 with check (
-  rating between 1 and 5
+  status = 'pending'
+  and rating between 1 and 5
   and exists (
     select 1
     from public.restaurants r
@@ -394,3 +402,43 @@ with check (
       and r.status = 'published'
   )
 );
+
+drop policy if exists "Public can read reviews" on public.reviews;
+drop policy if exists "Public can read approved reviews" on public.reviews;
+create policy "Public can read approved reviews"
+on public.reviews
+for select
+to anon, authenticated
+using (status = 'approved');
+
+drop policy if exists "Public MVP admin can read pending reviews" on public.reviews;
+create policy "Public MVP admin can read pending reviews"
+on public.reviews
+for select
+to anon, authenticated
+using (status = 'pending');
+
+drop function if exists public.review_user_review(uuid, text);
+
+create or replace function public.review_user_review(
+  target_review_id uuid,
+  next_status text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if next_status not in ('approved', 'rejected') then
+    raise exception 'Invalid review status: %', next_status;
+  end if;
+
+  update public.reviews
+  set status = next_status
+  where id = target_review_id
+    and status = 'pending';
+end;
+$$;
+
+grant execute on function public.review_user_review(uuid, text) to anon, authenticated;

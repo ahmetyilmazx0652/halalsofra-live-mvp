@@ -38,6 +38,18 @@ type AdminRestaurant = {
   countryName: string;
 };
 
+type AdminReview = {
+  id: string;
+  authorName: string | null;
+  rating: number;
+  halalRating: number | null;
+  foodRating: number | null;
+  body: string | null;
+  createdAt: string;
+  restaurantName: string;
+  restaurantSlug: string;
+};
+
 function mapRestaurant(item: any): AdminRestaurant {
   return {
     id: item.id,
@@ -70,6 +82,22 @@ function mapRestaurant(item: any): AdminRestaurant {
   };
 }
 
+function mapReview(item: any): AdminReview {
+  const restaurant = item.restaurants?.[0] ?? item.restaurants;
+
+  return {
+    id: item.id,
+    authorName: item.author_name,
+    rating: item.rating,
+    halalRating: item.halal_rating,
+    foodRating: item.food_rating,
+    body: item.body,
+    createdAt: item.created_at,
+    restaurantName: restaurant?.name ?? "Restoran",
+    restaurantSlug: restaurant?.slug ?? ""
+  };
+}
+
 async function getPendingRestaurants() {
   if (!hasSupabaseConfig || !supabase) return [];
 
@@ -81,6 +109,20 @@ async function getPendingRestaurants() {
 
   if (result.error) return [];
   return (result.data ?? []).map(mapRestaurant);
+}
+
+async function getPendingReviews() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("reviews")
+    .select("id,author_name,rating,halal_rating,food_rating,body,created_at,restaurants(name,slug)")
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  if (result.error) return [];
+  return (result.data ?? []).map(mapReview);
 }
 
 async function getPublishedRestaurants(query?: string) {
@@ -371,10 +413,43 @@ async function restoreArchivedRestaurant(formData: FormData) {
   redirect("/admin?restored=1");
 }
 
+async function moderateReview(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
+
+  const id = cleanText(formData.get("id"));
+  const status = cleanText(formData.get("status"));
+  const restaurantSlug = cleanText(formData.get("restaurant_slug"));
+
+  if (!id || !["approved", "rejected"].includes(status)) {
+    redirect("/admin?error=review-status");
+  }
+
+  const result = await supabase.rpc("review_user_review", {
+    target_review_id: id,
+    next_status: status
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);
+  }
+
+  revalidatePath("/admin");
+  if (restaurantSlug) {
+    revalidatePath(`/restaurants/${restaurantSlug}`);
+  }
+  redirect(`/admin?reviewModerated=${status}`);
+}
+
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; error?: string; q?: string };
+  searchParams?: { reviewed?: string; reviewModerated?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; error?: string; q?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -410,8 +485,9 @@ export default async function AdminPage({
   }
 
   const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
-  const [pendingRestaurants, publishedRestaurants, archivedRestaurants] = await Promise.all([
+  const [pendingRestaurants, pendingReviews, publishedRestaurants, archivedRestaurants] = await Promise.all([
     getPendingRestaurants(),
+    getPendingReviews(),
     getPublishedRestaurants(publishedQuery),
     getArchivedRestaurants()
   ]);
@@ -432,6 +508,9 @@ export default async function AdminPage({
         ) : null}
         {searchParams?.reviewed ? (
           <div className="notice success">İşlem tamamlandı: {searchParams.reviewed}</div>
+        ) : null}
+        {searchParams?.reviewModerated ? (
+          <div className="notice success">Yorum işlemi tamamlandı: {searchParams.reviewModerated}</div>
         ) : null}
         {searchParams?.saved ? (
           <div className="notice success">Başvuru bilgileri güncellendi.</div>
@@ -522,6 +601,52 @@ export default async function AdminPage({
           <span className="pill">Kuyruk boş</span>
           <h2>Bekleyen başvuru yok.</h2>
           <p className="muted">İşletme formundan gönderilen yeni restoranlar burada görünecek.</p>
+        </section>
+      ) : null}
+
+      <section className="panel" style={{ marginTop: 24 }}>
+        <span className="pill">Yorum Onayı</span>
+        <h2>Bekleyen kullanıcı yorumları.</h2>
+        <p className="muted">
+          Yorumları kontrol edip yayına alabilir veya reddedebilirsin.
+        </p>
+      </section>
+
+      <section className="grid">
+        {pendingReviews.map((review) => (
+          <article className="card admin-card" key={review.id}>
+            <div className="card-top">
+              <span className="pill">pending</span>
+              <span className="pill">{review.rating}/5</span>
+              {review.halalRating ? <span className="pill">Helal {review.halalRating}/5</span> : null}
+              {review.foodRating ? <span className="pill">Yemek {review.foodRating}/5</span> : null}
+            </div>
+            <h3>{review.restaurantName}</h3>
+            <p className="muted">{review.authorName || "Misafir"} · {new Date(review.createdAt).toLocaleDateString("tr-TR")}</p>
+            <p>{review.body}</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <form action={moderateReview}>
+                <input type="hidden" name="id" value={review.id} />
+                <input type="hidden" name="restaurant_slug" value={review.restaurantSlug} />
+                <input type="hidden" name="status" value="approved" />
+                <button className="button primary" type="submit">Yorumu Onayla</button>
+              </form>
+              <form action={moderateReview}>
+                <input type="hidden" name="id" value={review.id} />
+                <input type="hidden" name="restaurant_slug" value={review.restaurantSlug} />
+                <input type="hidden" name="status" value="rejected" />
+                <button className="button danger" type="submit">Reddet</button>
+              </form>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      {pendingReviews.length === 0 ? (
+        <section className="empty-state">
+          <span className="pill">Yorum kuyruğu boş</span>
+          <h2>Bekleyen yorum yok.</h2>
+          <p className="muted">Kullanıcı yorumları gönderildiğinde burada görünecek.</p>
         </section>
       ) : null}
 

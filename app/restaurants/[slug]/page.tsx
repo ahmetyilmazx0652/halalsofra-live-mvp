@@ -109,6 +109,7 @@ async function submitReview(formData: FormData) {
     rating,
     halal_rating: cleanRating(formData.get("halal_rating")),
     food_rating: cleanRating(formData.get("food_rating")),
+    status: "pending",
     body
   });
 
@@ -231,6 +232,7 @@ export default async function RestaurantDetailPage({
     .from("reviews")
     .select("id,author_name,rating,halal_rating,food_rating,body,owner_response,created_at")
     .eq("restaurant_id", restaurant.id)
+    .eq("status", "approved")
     .order("created_at", { ascending: false })
     .limit(20);
   const reviews = reviewsResult.data ?? [];
@@ -416,7 +418,7 @@ export default async function RestaurantDetailPage({
         </div>
 
         {searchParams?.reviewed ? (
-          <div className="notice success">Yorumun kaydedildi. Teşekkürler.</div>
+          <div className="notice success">Yorumun alındı. Admin onayından sonra yayına çıkacak.</div>
         ) : null}
         {searchParams?.reviewError ? (
           <div className="notice error">Yorum kaydedilemedi: {decodeURIComponent(searchParams.reviewError)}</div>
