@@ -14,6 +14,17 @@ type HomeExplorerProps = {
 const ALL_CITIES = "__all_cities__";
 const ALL_COUNTRIES = "__all_countries__";
 
+const featureFilters = [
+  { id: "all", label: "Tümü" },
+  { id: "grade-a", label: "Grade A" },
+  { id: "alcohol-free", label: "Alkolsüz" },
+  { id: "prayer-room", label: "Mescid" },
+  { id: "family-friendly", label: "Aile dostu" },
+  { id: "featured", label: "Öne çıkan" }
+] as const;
+
+type FeatureFilter = typeof featureFilters[number]["id"];
+
 function normalize(value: string) {
   return value.toLocaleLowerCase("tr").trim();
 }
@@ -27,6 +38,7 @@ export function HomeExplorer({
 }: HomeExplorerProps) {
   const [selectedCountry, setSelectedCountry] = useState(ALL_COUNTRIES);
   const [selectedCity, setSelectedCity] = useState(ALL_CITIES);
+  const [selectedFeature, setSelectedFeature] = useState<FeatureFilter>("all");
   const [query, setQuery] = useState("");
 
   const cityOptions = useMemo(() => {
@@ -56,10 +68,17 @@ export function HomeExplorer({
         ].join(" ")
       );
       const queryMatch = !q || haystack.includes(q);
+      const featureMatch =
+        selectedFeature === "all" ||
+        (selectedFeature === "grade-a" && restaurant.grade === "A") ||
+        (selectedFeature === "alcohol-free" && restaurant.alcoholFree) ||
+        (selectedFeature === "prayer-room" && restaurant.prayerRoom) ||
+        (selectedFeature === "family-friendly" && restaurant.familyFriendly) ||
+        (selectedFeature === "featured" && restaurant.featured);
 
-      return countryMatch && cityMatch && queryMatch;
+      return countryMatch && cityMatch && queryMatch && featureMatch;
     });
-  }, [query, restaurants, selectedCity, selectedCountry]);
+  }, [query, restaurants, selectedCity, selectedCountry, selectedFeature]);
 
   return (
     <main className="page">
@@ -102,6 +121,18 @@ export function HomeExplorer({
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
+          <div className="filter-chips" aria-label="Özellik filtresi">
+            {featureFilters.map((filter) => (
+              <button
+                className={`chip ${selectedFeature === filter.id ? "active" : ""}`}
+                key={filter.id}
+                type="button"
+                onClick={() => setSelectedFeature(filter.id)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
           <div className="stats">
             <div className="stat"><strong>{filteredRestaurants.length}</strong><span>sonuç</span></div>
             <div className="stat"><strong>{stats.restaurants}</strong><span>{source === "supabase" ? "canlı restoran" : "başlangıç kaydı"}</span></div>
@@ -134,6 +165,11 @@ export function HomeExplorer({
               {restaurant.rating ? <><strong>★ {restaurant.rating}</strong> · </> : null}
               {restaurant.cuisine} · {restaurant.price}
             </p>
+            <div className="feature-row">
+              {restaurant.alcoholFree ? <span className="pill">Alkolsüz</span> : null}
+              {restaurant.prayerRoom ? <span className="pill">Mescid</span> : null}
+              {restaurant.familyFriendly ? <span className="pill">Aile dostu</span> : null}
+            </div>
           </a>
         ))}
       </section>
@@ -154,8 +190,14 @@ export function HomeExplorer({
           <span className="pill">Sonuç yok</span>
           <h2>Bu filtrelerle restoran bulunamadı.</h2>
           <p className="muted">
-            Başka bir şehir seçin veya arama metnini kısaltın.
+            Başka bir şehir seçin, özellik filtresini değiştirin veya arama metnini kısaltın.
           </p>
+          <button className="button" type="button" onClick={() => {
+            setSelectedFeature("all");
+            setQuery("");
+          }}>
+            Filtreleri Hafiflet
+          </button>
         </section>
       ) : null}
     </main>

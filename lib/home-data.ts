@@ -21,6 +21,9 @@ export type HomeRestaurant = {
   rating: number | null;
   address: string;
   featured: boolean;
+  alcoholFree: boolean;
+  prayerRoom: boolean;
+  familyFriendly: boolean;
 };
 
 export type HomeData = {
@@ -44,7 +47,10 @@ function demoHomeData(): HomeData {
       ...restaurant,
       slug: restaurant.id,
       photoUrl: null,
-      rating: restaurant.rating
+      rating: restaurant.rating,
+      alcoholFree: restaurant.grade === "A",
+      prayerRoom: false,
+      familyFriendly: false
     })),
     stats: {
       restaurants: 384,
@@ -71,7 +77,7 @@ export async function getHomeData(): Promise<HomeData> {
     supabase.from("cities").select("id,country_id,name").order("name"),
     supabase
       .from("restaurants")
-      .select("id,slug,name,cuisine,address,price_level,halal_grade,is_featured,country_id,city_id,restaurant_photos(storage_path,sort_order)")
+      .select("id,slug,name,cuisine,address,price_level,halal_grade,is_featured,alcohol_free,prayer_room,family_friendly,country_id,city_id,restaurant_photos(storage_path,sort_order)")
       .eq("status", "published")
       .order("is_featured", { ascending: false })
       .order("created_at", { ascending: false })
@@ -124,7 +130,10 @@ export async function getHomeData(): Promise<HomeData> {
     price: priceLabel(restaurant.price_level),
     rating: null,
     address: restaurant.address,
-    featured: Boolean(restaurant.is_featured)
+    featured: Boolean(restaurant.is_featured),
+    alcoholFree: Boolean(restaurant.alcohol_free),
+    prayerRoom: Boolean(restaurant.prayer_room),
+    familyFriendly: Boolean(restaurant.family_friendly)
   }));
 
   return {
