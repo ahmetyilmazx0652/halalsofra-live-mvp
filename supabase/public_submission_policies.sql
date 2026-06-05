@@ -152,6 +152,7 @@ grant execute on function public.update_pending_restaurant(uuid, text, text, tex
 
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text);
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision);
+drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision);
 
 create or replace function public.update_published_restaurant(
   target_restaurant_id uuid,
@@ -162,6 +163,7 @@ create or replace function public.update_published_restaurant(
   next_opening_hours text,
   next_description text,
   next_halal_grade text,
+  next_is_featured boolean,
   next_alcohol_free boolean,
   next_prayer_room boolean,
   next_family_friendly boolean,
@@ -191,6 +193,7 @@ begin
       opening_hours = nullif(trim(next_opening_hours), ''),
       description = nullif(trim(next_description), ''),
       halal_grade = next_halal_grade::halal_grade,
+      is_featured = coalesce(next_is_featured, false),
       alcohol_free = coalesce(next_alcohol_free, false),
       prayer_room = coalesce(next_prayer_room, false),
       family_friendly = coalesce(next_family_friendly, false),
@@ -240,7 +243,7 @@ begin
 end;
 $$;
 
-grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
+grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, text, boolean, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
 
 drop policy if exists "Public can add menu category for submitted restaurants" on public.menu_categories;
 create policy "Public can add menu category for submitted restaurants"

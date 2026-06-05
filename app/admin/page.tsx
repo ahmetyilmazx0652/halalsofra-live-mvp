@@ -21,6 +21,7 @@ type AdminRestaurant = {
   description: string | null;
   halalGrade: string;
   subscriptionPlan: string;
+  isFeatured: boolean;
   alcoholFree: boolean;
   prayerRoom: boolean;
   familyFriendly: boolean;
@@ -49,6 +50,7 @@ function mapRestaurant(item: any): AdminRestaurant {
     description: item.description,
     halalGrade: item.halal_grade,
     subscriptionPlan: item.subscription_plan,
+    isFeatured: Boolean(item.is_featured),
     alcoholFree: Boolean(item.alcohol_free),
     prayerRoom: Boolean(item.prayer_room),
     familyFriendly: Boolean(item.family_friendly),
@@ -70,7 +72,7 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -83,7 +85,7 @@ async function getPublishedRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
     .eq("status", "published")
     .order("updated_at", { ascending: false })
     .limit(24);
@@ -233,6 +235,7 @@ async function updatePublishedRestaurant(formData: FormData) {
     next_opening_hours: cleanText(formData.get("opening_hours")),
     next_description: cleanText(formData.get("description")),
     next_halal_grade: halalGrade,
+    next_is_featured: formData.get("is_featured") === "on",
     next_alcohol_free: formData.get("alcohol_free") === "on",
     next_prayer_room: formData.get("prayer_room") === "on",
     next_family_friendly: formData.get("family_friendly") === "on",
@@ -363,6 +366,7 @@ export default async function AdminPage({
               <span className="pill">{item.status}</span>
               <span className="pill">Grade {item.halalGrade}</span>
               <span className="pill">{item.subscriptionPlan}</span>
+              {item.isFeatured ? <span className="pill">Öne çıkan</span> : null}
             </div>
             <h3>{item.name}</h3>
             <p className="muted">{item.countryName} · {item.cityName}</p>
@@ -444,6 +448,7 @@ export default async function AdminPage({
               <span className="pill">{item.status}</span>
               <span className="pill">Grade {item.halalGrade}</span>
               <span className="pill">{item.subscriptionPlan}</span>
+              {item.isFeatured ? <span className="pill">Öne çıkan</span> : null}
             </div>
             <h3>{item.name}</h3>
             <p className="muted">{item.countryName} · {item.cityName}</p>
@@ -483,6 +488,7 @@ export default async function AdminPage({
                 </div>
                 <textarea name="description" defaultValue={item.description ?? ""} placeholder="Kısa açıklama" />
                 <div className="checks">
+                  <label><input name="is_featured" type="checkbox" defaultChecked={item.isFeatured} /> Öne çıkar</label>
                   <label><input name="alcohol_free" type="checkbox" defaultChecked={item.alcoholFree} /> Alkolsüz</label>
                   <label><input name="prayer_room" type="checkbox" defaultChecked={item.prayerRoom} /> Mescid var</label>
                   <label><input name="family_friendly" type="checkbox" defaultChecked={item.familyFriendly} /> Aile dostu</label>
