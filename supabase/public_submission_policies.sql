@@ -80,6 +80,7 @@ add column if not exists opening_hours text;
 
 drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text);
 drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text, double precision, double precision);
+drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, uuid, text, text, text, double precision, double precision);
 
 create or replace function public.update_pending_restaurant(
   target_restaurant_id uuid,
@@ -90,6 +91,7 @@ create or replace function public.update_pending_restaurant(
   next_opening_hours text,
   next_description text,
   next_halal_grade text,
+  next_city_id uuid,
   next_certificate_body text,
   next_certificate_number text,
   next_certificate_url text,
@@ -103,9 +105,21 @@ set search_path = public
 as $$
 declare
   has_certificate_update boolean;
+  next_country_id uuid;
 begin
   if next_halal_grade not in ('A', 'B', 'C') then
     raise exception 'Invalid halal grade: %', next_halal_grade;
+  end if;
+
+  if next_city_id is not null then
+    select c.country_id
+    into next_country_id
+    from public.cities c
+    where c.id = next_city_id;
+
+    if next_country_id is null then
+      raise exception 'Invalid city id: %', next_city_id;
+    end if;
   end if;
 
   update public.restaurants
@@ -116,6 +130,8 @@ begin
       opening_hours = nullif(trim(next_opening_hours), ''),
       description = nullif(trim(next_description), ''),
       halal_grade = next_halal_grade::halal_grade,
+      city_id = coalesce(next_city_id, city_id),
+      country_id = coalesce(next_country_id, country_id),
       lat = coalesce(next_lat, lat),
       lng = coalesce(next_lng, lng),
       updated_at = now()
@@ -162,11 +178,12 @@ begin
 end;
 $$;
 
-grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text, text, double precision, double precision) to anon, authenticated;
+grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, uuid, text, text, text, double precision, double precision) to anon, authenticated;
 
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text);
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision);
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision);
+drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, text, uuid, boolean, boolean, boolean, boolean, text, text, text, double precision, double precision);
 
 create or replace function public.update_published_restaurant(
   target_restaurant_id uuid,
@@ -177,6 +194,7 @@ create or replace function public.update_published_restaurant(
   next_opening_hours text,
   next_description text,
   next_halal_grade text,
+  next_city_id uuid,
   next_is_featured boolean,
   next_alcohol_free boolean,
   next_prayer_room boolean,
@@ -194,9 +212,21 @@ set search_path = public
 as $$
 declare
   has_certificate_update boolean;
+  next_country_id uuid;
 begin
   if next_halal_grade not in ('A', 'B', 'C') then
     raise exception 'Invalid halal grade: %', next_halal_grade;
+  end if;
+
+  if next_city_id is not null then
+    select c.country_id
+    into next_country_id
+    from public.cities c
+    where c.id = next_city_id;
+
+    if next_country_id is null then
+      raise exception 'Invalid city id: %', next_city_id;
+    end if;
   end if;
 
   update public.restaurants
@@ -207,6 +237,8 @@ begin
       opening_hours = nullif(trim(next_opening_hours), ''),
       description = nullif(trim(next_description), ''),
       halal_grade = next_halal_grade::halal_grade,
+      city_id = coalesce(next_city_id, city_id),
+      country_id = coalesce(next_country_id, country_id),
       is_featured = coalesce(next_is_featured, false),
       alcohol_free = coalesce(next_alcohol_free, false),
       prayer_room = coalesce(next_prayer_room, false),
@@ -257,7 +289,7 @@ begin
 end;
 $$;
 
-grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, text, boolean, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
+grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, text, uuid, boolean, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
 
 drop function if exists public.archive_published_restaurant(uuid);
 

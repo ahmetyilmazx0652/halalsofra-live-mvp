@@ -13,6 +13,8 @@ type AdminRestaurant = {
   id: string;
   slug: string;
   name: string;
+  countryId: string | null;
+  cityId: string | null;
   photoUrl: string | null;
   address: string;
   phone: string | null;
@@ -38,6 +40,13 @@ type AdminRestaurant = {
   countryName: string;
 };
 
+type AdminCityOption = {
+  id: string;
+  name: string;
+  countryName: string;
+  countryFlag: string;
+};
+
 type AdminReview = {
   id: string;
   authorName: string | null;
@@ -56,6 +65,8 @@ function mapRestaurant(item: any): AdminRestaurant {
     id: item.id,
     slug: item.slug,
     name: item.name,
+    countryId: item.country_id,
+    cityId: item.city_id,
     photoUrl: (item.restaurant_photos ?? [])
       .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.storage_path ?? null,
     address: item.address,
@@ -105,12 +116,30 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
+    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
   if (result.error) return [];
   return (result.data ?? []).map(mapRestaurant);
+}
+
+async function getAdminCities() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("cities")
+    .select("id,name,countries(name,flag)")
+    .order("name");
+
+  if (result.error) return [];
+
+  return (result.data ?? []).map((city: any): AdminCityOption => ({
+    id: city.id,
+    name: city.name,
+    countryName: city.countries?.[0]?.name ?? city.countries?.name ?? "Bilinmiyor",
+    countryFlag: city.countries?.[0]?.flag ?? city.countries?.flag ?? "🌍"
+  }));
 }
 
 async function getPendingReviews() {
@@ -146,7 +175,7 @@ async function getPublishedRestaurants(query?: string) {
 
   let request = supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
+    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
     .eq("status", "published");
 
   if (query) {
@@ -166,7 +195,7 @@ async function getArchivedRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
+    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
     .eq("status", "suspended")
     .order("updated_at", { ascending: false })
     .limit(24);
@@ -284,6 +313,7 @@ async function updatePendingRestaurant(formData: FormData) {
 
   const id = cleanText(formData.get("id"));
   const halalGrade = cleanText(formData.get("halal_grade")) || "B";
+  const cityId = cleanText(formData.get("city_id")) || null;
   const lat = cleanCoordinate(formData.get("lat"));
   const lng = cleanCoordinate(formData.get("lng"));
 
@@ -303,6 +333,7 @@ async function updatePendingRestaurant(formData: FormData) {
     next_opening_hours: cleanText(formData.get("opening_hours")),
     next_description: cleanText(formData.get("description")),
     next_halal_grade: halalGrade,
+    next_city_id: cityId,
     next_certificate_body: cleanText(formData.get("certificate_body")),
     next_certificate_number: cleanText(formData.get("certificate_number")),
     next_certificate_url: cleanText(formData.get("certificate_url")),
@@ -329,6 +360,7 @@ async function updatePublishedRestaurant(formData: FormData) {
 
   const id = cleanText(formData.get("id"));
   const halalGrade = cleanText(formData.get("halal_grade")) || "B";
+  const cityId = cleanText(formData.get("city_id")) || null;
   const lat = cleanCoordinate(formData.get("lat"));
   const lng = cleanCoordinate(formData.get("lng"));
 
@@ -348,6 +380,7 @@ async function updatePublishedRestaurant(formData: FormData) {
     next_opening_hours: cleanText(formData.get("opening_hours")),
     next_description: cleanText(formData.get("description")),
     next_halal_grade: halalGrade,
+    next_city_id: cityId,
     next_is_featured: formData.get("is_featured") === "on",
     next_alcohol_free: formData.get("alcohol_free") === "on",
     next_prayer_room: formData.get("prayer_room") === "on",
@@ -562,12 +595,13 @@ export default async function AdminPage({
   }
 
   const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
-  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants] = await Promise.all([
+  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants, adminCities] = await Promise.all([
     getPendingRestaurants(),
     getPendingReviews(),
     getApprovedReviews(),
     getPublishedRestaurants(publishedQuery),
-    getArchivedRestaurants()
+    getArchivedRestaurants(),
+    getAdminCities()
   ]);
 
   return (
@@ -659,6 +693,14 @@ export default async function AdminPage({
                   <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
                   <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
                   <input name="opening_hours" defaultValue={item.openingHours ?? ""} placeholder="Çalışma saatleri" />
+                  <select name="city_id" defaultValue={item.cityId ?? ""}>
+                    <option value="">Şehir değiştirme</option>
+                    {adminCities.map((city) => (
+                      <option key={city.id} value={city.id}>
+                        {city.countryFlag} {city.countryName} / {city.name}
+                      </option>
+                    ))}
+                  </select>
                   <select name="halal_grade" defaultValue={item.halalGrade}>
                     <option value="A">Grade A</option>
                     <option value="B">Grade B</option>
@@ -855,6 +897,14 @@ export default async function AdminPage({
                   <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
                   <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
                   <input name="opening_hours" defaultValue={item.openingHours ?? ""} placeholder="Çalışma saatleri" />
+                  <select name="city_id" defaultValue={item.cityId ?? ""}>
+                    <option value="">Şehir değiştirme</option>
+                    {adminCities.map((city) => (
+                      <option key={city.id} value={city.id}>
+                        {city.countryFlag} {city.countryName} / {city.name}
+                      </option>
+                    ))}
+                  </select>
                   <select name="halal_grade" defaultValue={item.halalGrade}>
                     <option value="A">Grade A</option>
                     <option value="B">Grade B</option>
