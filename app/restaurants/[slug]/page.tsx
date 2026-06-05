@@ -44,6 +44,18 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+function websiteUrl(value: string | null) {
+  if (!value) return null;
+  return value.startsWith("http://") || value.startsWith("https://") ? value : `https://${value}`;
+}
+
+function instagramUrl(value: string | null) {
+  if (!value) return null;
+  const cleanValue = value.trim();
+  if (cleanValue.startsWith("http://") || cleanValue.startsWith("https://")) return cleanValue;
+  return `https://www.instagram.com/${cleanValue.replace(/^@/, "")}`;
+}
+
 export default async function RestaurantDetailPage({
   params
 }: {
@@ -69,6 +81,8 @@ export default async function RestaurantDetailPage({
   const restaurant: any = result.data;
   const country = restaurant.countries?.[0] ?? restaurant.countries;
   const city = restaurant.cities?.[0] ?? restaurant.cities;
+  const website = websiteUrl(restaurant.website);
+  const instagram = instagramUrl(restaurant.instagram);
   const menuResult = await supabase
     .from("menu_categories")
     .select("id,name,sort_order,menu_items(id,name,description,price,currency,is_available,sort_order)")
@@ -132,6 +146,12 @@ export default async function RestaurantDetailPage({
             <p><strong>Fiyat</strong><span>{priceLabel(restaurant.price_level)}</span></p>
             {restaurant.phone ? <p><strong>Telefon</strong><span>{restaurant.phone}</span></p> : null}
             {restaurant.email ? <p><strong>E-posta</strong><span>{restaurant.email}</span></p> : null}
+            {website ? (
+              <p><strong>Web</strong><span><a href={website} target="_blank" rel="noreferrer">Web sitesini aç</a></span></p>
+            ) : null}
+            {instagram ? (
+              <p><strong>Instagram</strong><span><a href={instagram} target="_blank" rel="noreferrer">{restaurant.instagram}</a></span></p>
+            ) : null}
           </div>
         </aside>
       </section>

@@ -70,6 +70,8 @@ async function submitRestaurant(formData: FormData) {
     address,
     phone: cleanText(formData.get("phone")),
     email: cleanText(formData.get("email")),
+    website: cleanText(formData.get("website")),
+    instagram: cleanText(formData.get("instagram")),
     google_place_id: cleanText(formData.get("google_place_id")),
     price_level: Math.min(Math.max(priceLevel, 1), 4),
     halal_grade: cleanText(formData.get("halal_grade")) || "B",
@@ -243,6 +245,8 @@ export default async function OwnerPage({
             <input name="name" placeholder="Restoran adı (zorunlu)" required />
             <input name="phone" placeholder="Telefon (opsiyonel)" />
             <input name="email" type="email" placeholder="E-posta (opsiyonel)" />
+            <input name="website" type="url" placeholder="Web sitesi, örn. https://..." />
+            <input name="instagram" placeholder="Instagram, örn. @halalsofra" />
             <select name="city_id" required>
               <option value="">Ülke / şehir seç (zorunlu)</option>
               {cities.map((city) => (

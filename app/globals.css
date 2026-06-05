@@ -410,6 +410,11 @@ input[type="checkbox"] {
   color: var(--muted);
 }
 
+.info-list a {
+  color: var(--green-dark);
+  font-weight: 800;
+}
+
 .menu-form {
   display: grid;
   gap: 10px;
