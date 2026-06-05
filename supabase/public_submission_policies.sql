@@ -35,7 +35,7 @@ to anon, authenticated
 using (status = 'pending')
 with check (status in ('published', 'rejected'));
 
-create or replace function public.review_restaurant(restaurant_id uuid, next_status text)
+create or replace function public.review_restaurant(target_restaurant_id uuid, next_status text)
 returns void
 language plpgsql
 security definer
@@ -49,12 +49,12 @@ begin
   update public.restaurants
   set status = next_status::restaurant_status,
       updated_at = now()
-  where id = review_restaurant.restaurant_id
+  where id = target_restaurant_id
     and status = 'pending';
 
   update public.certificates
   set status = case when next_status = 'published' then 'approved' else 'rejected' end
-  where restaurant_id = review_restaurant.restaurant_id
+  where certificates.restaurant_id = target_restaurant_id
     and status = 'pending';
 end;
 $$;

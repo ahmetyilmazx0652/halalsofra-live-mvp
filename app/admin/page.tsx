@@ -74,7 +74,7 @@ async function updateRestaurantStatus(formData: FormData) {
   }
 
   const result = await supabase.rpc("review_restaurant", {
-    restaurant_id: id,
+    target_restaurant_id: id,
     next_status: status
   });
 
