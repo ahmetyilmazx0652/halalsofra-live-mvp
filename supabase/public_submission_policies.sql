@@ -61,6 +61,8 @@ $$;
 
 grant execute on function public.review_restaurant(uuid, text) to anon, authenticated;
 
+drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text);
+
 create or replace function public.update_pending_restaurant(
   target_restaurant_id uuid,
   next_name text,
@@ -71,7 +73,9 @@ create or replace function public.update_pending_restaurant(
   next_halal_grade text,
   next_certificate_body text,
   next_certificate_number text,
-  next_certificate_url text
+  next_certificate_url text,
+  next_lat double precision,
+  next_lng double precision
 )
 returns void
 language plpgsql
@@ -92,6 +96,8 @@ begin
       email = nullif(trim(next_email), ''),
       description = nullif(trim(next_description), ''),
       halal_grade = next_halal_grade::halal_grade,
+      lat = next_lat,
+      lng = next_lng,
       updated_at = now()
   where id = target_restaurant_id
     and status = 'pending';
@@ -136,7 +142,9 @@ begin
 end;
 $$;
 
-grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text, double precision, double precision) to anon, authenticated;
+
+drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text);
 
 create or replace function public.update_published_restaurant(
   target_restaurant_id uuid,
@@ -151,7 +159,9 @@ create or replace function public.update_published_restaurant(
   next_family_friendly boolean,
   next_certificate_body text,
   next_certificate_number text,
-  next_certificate_url text
+  next_certificate_url text,
+  next_lat double precision,
+  next_lng double precision
 )
 returns void
 language plpgsql
@@ -175,6 +185,8 @@ begin
       alcohol_free = coalesce(next_alcohol_free, false),
       prayer_room = coalesce(next_prayer_room, false),
       family_friendly = coalesce(next_family_friendly, false),
+      lat = next_lat,
+      lng = next_lng,
       updated_at = now()
   where id = target_restaurant_id
     and status = 'published';
@@ -219,7 +231,7 @@ begin
 end;
 $$;
 
-grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text) to anon, authenticated;
+grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
 
 drop policy if exists "Public can add menu category for submitted restaurants" on public.menu_categories;
 create policy "Public can add menu category for submitted restaurants"

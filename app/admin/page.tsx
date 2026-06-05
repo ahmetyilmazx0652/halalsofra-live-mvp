@@ -20,6 +20,8 @@ type AdminRestaurant = {
   prayerRoom: boolean;
   familyFriendly: boolean;
   googlePlaceId: string | null;
+  lat: number | null;
+  lng: number | null;
   hasCertificate: boolean;
   certificateBody: string | null;
   certificateNumber: string | null;
@@ -45,6 +47,8 @@ function mapRestaurant(item: any): AdminRestaurant {
     prayerRoom: Boolean(item.prayer_room),
     familyFriendly: Boolean(item.family_friendly),
     googlePlaceId: item.google_place_id,
+    lat: item.lat,
+    lng: item.lng,
     hasCertificate: (item.certificates ?? []).length > 0,
     certificateBody: item.certificates?.[0]?.body ?? null,
     certificateNumber: item.certificates?.[0]?.certificate_number ?? null,
@@ -60,7 +64,7 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -73,7 +77,7 @@ async function getPublishedRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,cuisine,description,halal_grade,subscription_plan,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
     .eq("status", "published")
     .order("updated_at", { ascending: false })
     .limit(24);
@@ -86,6 +90,14 @@ function cleanText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function cleanCoordinate(value: FormDataEntryValue | null) {
+  const text = cleanText(value).replace(",", ".");
+  if (!text) return null;
+
+  const coordinate = Number(text);
+  return Number.isFinite(coordinate) ? coordinate : null;
+}
+
 async function updatePendingRestaurant(formData: FormData) {
   "use server";
 
@@ -95,6 +107,8 @@ async function updatePendingRestaurant(formData: FormData) {
 
   const id = cleanText(formData.get("id"));
   const halalGrade = cleanText(formData.get("halal_grade")) || "B";
+  const lat = cleanCoordinate(formData.get("lat"));
+  const lng = cleanCoordinate(formData.get("lng"));
 
   if (!id) {
     redirect("/admin?error=missing");
@@ -113,7 +127,9 @@ async function updatePendingRestaurant(formData: FormData) {
     next_halal_grade: halalGrade,
     next_certificate_body: cleanText(formData.get("certificate_body")),
     next_certificate_number: cleanText(formData.get("certificate_number")),
-    next_certificate_url: cleanText(formData.get("certificate_url"))
+    next_certificate_url: cleanText(formData.get("certificate_url")),
+    next_lat: lat,
+    next_lng: lng
   });
 
   if (result.error) {
@@ -133,6 +149,8 @@ async function updatePublishedRestaurant(formData: FormData) {
 
   const id = cleanText(formData.get("id"));
   const halalGrade = cleanText(formData.get("halal_grade")) || "B";
+  const lat = cleanCoordinate(formData.get("lat"));
+  const lng = cleanCoordinate(formData.get("lng"));
 
   if (!id) {
     redirect("/admin?error=missing");
@@ -154,7 +172,9 @@ async function updatePublishedRestaurant(formData: FormData) {
     next_family_friendly: formData.get("family_friendly") === "on",
     next_certificate_body: cleanText(formData.get("certificate_body")),
     next_certificate_number: cleanText(formData.get("certificate_number")),
-    next_certificate_url: cleanText(formData.get("certificate_url"))
+    next_certificate_url: cleanText(formData.get("certificate_url")),
+    next_lat: lat,
+    next_lng: lng
   });
 
   if (result.error) {
@@ -245,6 +265,7 @@ export default async function AdminPage({
               {item.phone ? <span>{item.phone}</span> : null}
               {item.email ? <span>{item.email}</span> : null}
               {item.googlePlaceId ? <span>Place ID var</span> : null}
+              {item.lat !== null && item.lng !== null ? <span>Koordinat var</span> : null}
               {item.hasCertificate ? <span>Sertifika var</span> : null}
             </div>
             {item.description ? <p className="muted">{item.description}</p> : null}
@@ -262,6 +283,8 @@ export default async function AdminPage({
                   <input name="address" defaultValue={item.address} placeholder="Adres" />
                   <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
                   <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
+                  <input name="lat" defaultValue={item.lat ?? ""} inputMode="decimal" placeholder="Enlem, örn. 52.4983" />
+                  <input name="lng" defaultValue={item.lng ?? ""} inputMode="decimal" placeholder="Boylam, örn. 13.4236" />
                   <select name="halal_grade" defaultValue={item.halalGrade}>
                     <option value="A">Grade A</option>
                     <option value="B">Grade B</option>
@@ -323,6 +346,7 @@ export default async function AdminPage({
               {item.phone ? <span>{item.phone}</span> : null}
               {item.email ? <span>{item.email}</span> : null}
               {item.googlePlaceId ? <span>Place ID var</span> : null}
+              {item.lat !== null && item.lng !== null ? <span>Koordinat var</span> : null}
               {item.hasCertificate ? <span>Sertifika var</span> : null}
             </div>
             <div className="feature-row">
@@ -339,6 +363,8 @@ export default async function AdminPage({
                   <input name="address" defaultValue={item.address} placeholder="Adres" />
                   <input name="phone" defaultValue={item.phone ?? ""} placeholder="Telefon" />
                   <input name="email" defaultValue={item.email ?? ""} placeholder="E-posta" />
+                  <input name="lat" defaultValue={item.lat ?? ""} inputMode="decimal" placeholder="Enlem, örn. 52.4983" />
+                  <input name="lng" defaultValue={item.lng ?? ""} inputMode="decimal" placeholder="Boylam, örn. 13.4236" />
                   <select name="halal_grade" defaultValue={item.halalGrade}>
                     <option value="A">Grade A</option>
                     <option value="B">Grade B</option>
