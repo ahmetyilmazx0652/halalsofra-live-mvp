@@ -7,6 +7,8 @@ grant insert on public.menu_items to anon, authenticated;
 grant select on public.menu_items to anon, authenticated;
 grant insert on public.certificates to anon, authenticated;
 grant select on public.certificates to anon, authenticated;
+grant insert on public.restaurant_photos to anon, authenticated;
+grant select on public.restaurant_photos to anon, authenticated;
 
 drop policy if exists "Public can submit pending restaurants" on public.restaurants;
 create policy "Public can submit pending restaurants"
@@ -339,6 +341,21 @@ with check (
 drop policy if exists "Public can add certificates for submitted restaurants" on public.certificates;
 create policy "Public can add certificates for submitted restaurants"
 on public.certificates
+for insert
+to anon, authenticated
+with check (
+  exists (
+    select 1
+    from public.restaurants r
+    where r.id = restaurant_id
+      and r.status = 'pending'
+      and r.owner_id is null
+  )
+);
+
+drop policy if exists "Public can add photos for submitted restaurants" on public.restaurant_photos;
+create policy "Public can add photos for submitted restaurants"
+on public.restaurant_photos
 for insert
 to anon, authenticated
 with check (

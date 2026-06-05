@@ -12,6 +12,7 @@ export type HomeRestaurant = {
   id: string;
   slug: string;
   name: string;
+  photoUrl: string | null;
   country: string;
   city: string;
   cuisine: string;
@@ -42,6 +43,7 @@ function demoHomeData(): HomeData {
     restaurants: demoRestaurants.map((restaurant) => ({
       ...restaurant,
       slug: restaurant.id,
+      photoUrl: null,
       rating: restaurant.rating
     })),
     stats: {
@@ -69,7 +71,7 @@ export async function getHomeData(): Promise<HomeData> {
     supabase.from("cities").select("id,country_id,name").order("name"),
     supabase
       .from("restaurants")
-      .select("id,slug,name,cuisine,address,price_level,halal_grade,is_featured,country_id,city_id")
+      .select("id,slug,name,cuisine,address,price_level,halal_grade,is_featured,country_id,city_id,restaurant_photos(storage_path,sort_order)")
       .eq("status", "published")
       .order("is_featured", { ascending: false })
       .order("created_at", { ascending: false })
@@ -113,6 +115,8 @@ export async function getHomeData(): Promise<HomeData> {
     id: restaurant.id,
     slug: restaurant.slug,
     name: restaurant.name,
+    photoUrl: (restaurant.restaurant_photos ?? [])
+      .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.storage_path ?? null,
     country: countryNameById.get(restaurant.country_id) ?? "Bilinmiyor",
     city: cityNameById.get(restaurant.city_id) ?? "Bilinmiyor",
     cuisine: restaurant.cuisine ?? "Restoran",

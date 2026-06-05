@@ -13,6 +13,7 @@ type AdminRestaurant = {
   id: string;
   slug: string;
   name: string;
+  photoUrl: string | null;
   address: string;
   phone: string | null;
   email: string | null;
@@ -42,6 +43,8 @@ function mapRestaurant(item: any): AdminRestaurant {
     id: item.id,
     slug: item.slug,
     name: item.name,
+    photoUrl: (item.restaurant_photos ?? [])
+      .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.storage_path ?? null,
     address: item.address,
     phone: item.phone,
     email: item.email,
@@ -72,7 +75,7 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -85,7 +88,7 @@ async function getPublishedRestaurants(query?: string) {
 
   let request = supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
     .eq("status", "published");
 
   if (query) {
@@ -105,7 +108,7 @@ async function getArchivedRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path)")
+    .select("id,slug,name,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
     .eq("status", "suspended")
     .order("updated_at", { ascending: false })
     .limit(24);
@@ -456,6 +459,7 @@ export default async function AdminPage({
               <span className="pill">{item.subscriptionPlan}</span>
               {item.isFeatured ? <span className="pill">Öne çıkan</span> : null}
             </div>
+            {item.photoUrl ? <img className="admin-thumb" src={item.photoUrl} alt={`${item.name} fotoğrafı`} loading="lazy" /> : null}
             <h3>{item.name}</h3>
             <p className="muted">{item.countryName} · {item.cityName}</p>
             <p>{item.address}</p>
@@ -548,6 +552,7 @@ export default async function AdminPage({
               <span className="pill">{item.subscriptionPlan}</span>
               {item.isFeatured ? <span className="pill">Öne çıkan</span> : null}
             </div>
+            {item.photoUrl ? <img className="admin-thumb" src={item.photoUrl} alt={`${item.name} fotoğrafı`} loading="lazy" /> : null}
             <h3>{item.name}</h3>
             <p className="muted">{item.countryName} · {item.cityName}</p>
             <p>{item.address}</p>
@@ -629,6 +634,7 @@ export default async function AdminPage({
               <span className="pill">Grade {item.halalGrade}</span>
               <span className="pill">{item.subscriptionPlan}</span>
             </div>
+            {item.photoUrl ? <img className="admin-thumb" src={item.photoUrl} alt={`${item.name} fotoğrafı`} loading="lazy" /> : null}
             <h3>{item.name}</h3>
             <p className="muted">{item.countryName} · {item.cityName}</p>
             <p>{item.address}</p>

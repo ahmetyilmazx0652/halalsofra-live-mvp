@@ -126,6 +126,25 @@ async function submitRestaurant(formData: FormData) {
     }
   }
 
+  const photoUrls = [1, 2, 3]
+    .map((index) => cleanText(formData.get(`photo_url_${index}`)))
+    .filter(Boolean);
+
+  if (photoUrls.length > 0) {
+    const photoResult = await supabase.from("restaurant_photos").insert(
+      photoUrls.map((url, index) => ({
+        restaurant_id: insertResult.data.id,
+        storage_path: url,
+        alt_text: `${name} fotoğrafı ${index + 1}`,
+        sort_order: index
+      }))
+    );
+
+    if (photoResult.error) {
+      redirect(`/owner?error=${encodeURIComponent(photoResult.error.message)}`);
+    }
+  }
+
   const certificateBody = cleanText(formData.get("certificate_body"));
   const certificateUrl = cleanText(formData.get("certificate_url"));
   const certificateNumber = cleanText(formData.get("certificate_number"));
@@ -296,6 +315,15 @@ export default async function OwnerPage({
                 <input name={`menu_price_${index}`} inputMode="decimal" placeholder="Fiyat € (opsiyonel)" />
               </div>
             ))}
+          </div>
+          <div className="menu-form">
+            <h3>Fotoğraflar</h3>
+            <p className="muted">Opsiyonel. Şimdilik fotoğraf linki ekleyin; dosya yükleme daha sonra bağlanacak.</p>
+            <div className="form-grid">
+              <input name="photo_url_1" type="url" placeholder="Fotoğraf linki 1, örn. https://..." />
+              <input name="photo_url_2" type="url" placeholder="Fotoğraf linki 2, örn. https://..." />
+              <input name="photo_url_3" type="url" placeholder="Fotoğraf linki 3, örn. https://..." />
+            </div>
           </div>
           <div className="menu-form">
             <h3>Sertifika bilgisi</h3>

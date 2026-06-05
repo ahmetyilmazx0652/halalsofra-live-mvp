@@ -164,6 +164,12 @@ export default async function RestaurantDetailPage({
     .eq("status", "approved")
     .order("valid_until", { ascending: false });
   const certificate: any = certificateResult.data?.[0] ?? null;
+  const photoResult = await supabase
+    .from("restaurant_photos")
+    .select("id,storage_path,alt_text,sort_order")
+    .eq("restaurant_id", restaurant.id)
+    .order("sort_order", { ascending: true });
+  const photos = photoResult.data ?? [];
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
@@ -174,6 +180,7 @@ export default async function RestaurantDetailPage({
     email: restaurant.email || undefined,
     servesCuisine: restaurant.cuisine,
     url: `https://halalsofra-live-mvp.vercel.app/restaurants/${restaurant.slug}`,
+    image: photos.map((photo) => photo.storage_path),
     priceRange: priceLabel(restaurant.price_level),
     geo: restaurant.lat !== null && restaurant.lng !== null
       ? {
@@ -240,6 +247,22 @@ export default async function RestaurantDetailPage({
           </div>
         </aside>
       </section>
+
+      {photos.length > 0 ? (
+        <section className="panel photo-panel">
+          <span className="pill">Fotoğraflar</span>
+          <div className="photo-grid">
+            {photos.map((photo) => (
+              <img
+                key={photo.id}
+                src={photo.storage_path}
+                alt={photo.alt_text || `${restaurant.name} fotoğrafı`}
+                loading="lazy"
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid">
         <article className="card">

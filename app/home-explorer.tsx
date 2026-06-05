@@ -120,6 +120,9 @@ export function HomeExplorer({
       <section className="grid">
         {filteredRestaurants.map((restaurant) => (
           <a className={`card restaurant-card ${restaurant.featured ? "featured" : ""}`} href={`/restaurants/${restaurant.slug}`} key={restaurant.id}>
+            {restaurant.photoUrl ? (
+              <img className="restaurant-card-photo" src={restaurant.photoUrl} alt={`${restaurant.name} fotoğrafı`} loading="lazy" />
+            ) : null}
             <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
               <span className="pill">Grade {restaurant.grade}</span>
               {restaurant.featured ? <span className="pill">Öne çıkan</span> : null}
