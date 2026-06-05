@@ -135,6 +135,12 @@ textarea {
   background: #fff;
 }
 
+input[type="checkbox"] {
+  width: auto;
+  min-width: 18px;
+  height: 18px;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -244,7 +250,7 @@ textarea {
 .checks {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px;
   margin-top: 12px;
 }
 
@@ -252,6 +258,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-height: 32px;
   color: var(--green-dark);
   font-weight: 700;
 }
