@@ -230,6 +230,23 @@ export default async function OwnerPage({
         <p className="muted">
           Zorunlu alanlar: restoran adı, ülke/şehir ve tam adres. Menü, sertifika, telefon ve diğer bilgiler opsiyoneldir.
         </p>
+        <div className="application-guide" aria-label="Başvuru hazırlık rehberi">
+          <article>
+            <span className="pill">Zorunlu</span>
+            <h3>Yayına hazırlık için temel bilgiler</h3>
+            <p>Restoran adı, şehir ve tam adres olmadan başvuru kaydedilmez.</p>
+          </article>
+          <article>
+            <span className="pill">Önerilen</span>
+            <h3>Daha güvenilir görünürlük</h3>
+            <p>Telefon, çalışma saati, menü, sertifika ve Google Place ID kullanıcı güvenini artırır.</p>
+          </article>
+          <article>
+            <span className="pill">Sonradan</span>
+            <h3>Eksikler admin panelinde tamamlanabilir</h3>
+            <p>Fotoğraf, sertifika linki ve açıklama daha sonra düzenlenebilir.</p>
+          </article>
+        </div>
         {searchParams?.error ? (
           <div className="notice error">Başvuru kaydedilemedi: {decodeURIComponent(searchParams.error)}</div>
         ) : null}
