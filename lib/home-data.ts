@@ -24,6 +24,10 @@ export type HomeRestaurant = {
   alcoholFree: boolean;
   prayerRoom: boolean;
   familyFriendly: boolean;
+  hasCertificate: boolean;
+  menuItemCount: number;
+  reviewCount: number;
+  hasPreciseLocation: boolean;
 };
 
 export type HomeData = {
@@ -50,7 +54,11 @@ function demoHomeData(): HomeData {
       rating: restaurant.rating,
       alcoholFree: restaurant.grade === "A",
       prayerRoom: false,
-      familyFriendly: false
+      familyFriendly: false,
+      hasCertificate: restaurant.grade === "A",
+      menuItemCount: 0,
+      reviewCount: 0,
+      hasPreciseLocation: false
     })),
     stats: {
       restaurants: 384,
@@ -77,7 +85,7 @@ export async function getHomeData(): Promise<HomeData> {
     supabase.from("cities").select("id,country_id,name").order("name"),
     supabase
       .from("restaurants")
-      .select("id,slug,name,cuisine,address,price_level,halal_grade,is_featured,alcohol_free,prayer_room,family_friendly,country_id,city_id,restaurant_photos(storage_path,sort_order)")
+      .select("id,slug,name,cuisine,address,price_level,halal_grade,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,country_id,city_id,certificates(id,status),menu_categories(id,menu_items(id,is_available)),reviews(id,status),restaurant_photos(storage_path,sort_order)")
       .eq("status", "published")
       .order("is_featured", { ascending: false })
       .order("created_at", { ascending: false })
@@ -117,24 +125,37 @@ export async function getHomeData(): Promise<HomeData> {
     countryNameById.set(country.id, country.name);
   }
 
-  const restaurants = (restaurantsResult.data ?? []).map((restaurant: any) => ({
-    id: restaurant.id,
-    slug: restaurant.slug,
-    name: restaurant.name,
-    photoUrl: (restaurant.restaurant_photos ?? [])
-      .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.storage_path ?? null,
-    country: countryNameById.get(restaurant.country_id) ?? "Bilinmiyor",
-    city: cityNameById.get(restaurant.city_id) ?? "Bilinmiyor",
-    cuisine: restaurant.cuisine ?? "Restoran",
-    grade: restaurant.halal_grade ?? "B",
-    price: priceLabel(restaurant.price_level),
-    rating: null,
-    address: restaurant.address,
-    featured: Boolean(restaurant.is_featured),
-    alcoholFree: Boolean(restaurant.alcohol_free),
-    prayerRoom: Boolean(restaurant.prayer_room),
-    familyFriendly: Boolean(restaurant.family_friendly)
-  }));
+  const restaurants = (restaurantsResult.data ?? []).map((restaurant: any) => {
+    const approvedReviews = (restaurant.reviews ?? []).filter((review: any) => review.status === "approved");
+    const menuItemCount = (restaurant.menu_categories ?? []).reduce(
+      (total: number, category: any) =>
+        total + (category.menu_items ?? []).filter((item: any) => item.is_available).length,
+      0
+    );
+
+    return {
+      id: restaurant.id,
+      slug: restaurant.slug,
+      name: restaurant.name,
+      photoUrl: (restaurant.restaurant_photos ?? [])
+        .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.storage_path ?? null,
+      country: countryNameById.get(restaurant.country_id) ?? "Bilinmiyor",
+      city: cityNameById.get(restaurant.city_id) ?? "Bilinmiyor",
+      cuisine: restaurant.cuisine ?? "Restoran",
+      grade: restaurant.halal_grade ?? "B",
+      price: priceLabel(restaurant.price_level),
+      rating: null,
+      address: restaurant.address,
+      featured: Boolean(restaurant.is_featured),
+      alcoholFree: Boolean(restaurant.alcohol_free),
+      prayerRoom: Boolean(restaurant.prayer_room),
+      familyFriendly: Boolean(restaurant.family_friendly),
+      hasCertificate: (restaurant.certificates ?? []).some((certificate: any) => certificate.status === "approved"),
+      menuItemCount,
+      reviewCount: approvedReviews.length,
+      hasPreciseLocation: Boolean(restaurant.google_place_id || (restaurant.lat !== null && restaurant.lng !== null))
+    };
+  });
 
   return {
     countries,
