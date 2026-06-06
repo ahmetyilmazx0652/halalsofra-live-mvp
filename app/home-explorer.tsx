@@ -24,9 +24,24 @@ const featureFilters = [
 ] as const;
 
 type FeatureFilter = typeof featureFilters[number]["id"];
+type SortMode = "featured" | "complete" | "name" | "reviews";
 
 function normalize(value: string) {
   return value.toLocaleLowerCase("tr").trim();
+}
+
+function completenessScore(restaurant: HomeRestaurant) {
+  return [
+    restaurant.featured,
+    restaurant.grade === "A",
+    restaurant.hasCertificate,
+    restaurant.menuItemCount > 0,
+    restaurant.reviewCount > 0,
+    restaurant.hasPreciseLocation,
+    restaurant.alcoholFree,
+    restaurant.prayerRoom,
+    restaurant.familyFriendly
+  ].filter(Boolean).length;
 }
 
 export function HomeExplorer({
@@ -40,6 +55,7 @@ export function HomeExplorer({
   const [selectedCity, setSelectedCity] = useState(ALL_CITIES);
   const [selectedFeature, setSelectedFeature] = useState<FeatureFilter>("all");
   const [query, setQuery] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("featured");
 
   const cityOptions = useMemo(() => {
     if (selectedCountry === ALL_COUNTRIES) {
@@ -54,7 +70,7 @@ export function HomeExplorer({
   const filteredRestaurants = useMemo(() => {
     const q = normalize(query);
 
-    return restaurants.filter((restaurant) => {
+    const matches = restaurants.filter((restaurant) => {
       const countryMatch = selectedCountry === ALL_COUNTRIES || restaurant.country === selectedCountry;
       const cityMatch = selectedCity === ALL_CITIES || restaurant.city === selectedCity;
       const haystack = normalize(
@@ -78,7 +94,21 @@ export function HomeExplorer({
 
       return countryMatch && cityMatch && queryMatch && featureMatch;
     });
-  }, [query, restaurants, selectedCity, selectedCountry, selectedFeature]);
+
+    return [...matches].sort((a, b) => {
+      if (sortMode === "name") {
+        return a.name.localeCompare(b.name, "tr");
+      }
+      if (sortMode === "reviews") {
+        return b.reviewCount - a.reviewCount || b.menuItemCount - a.menuItemCount || a.name.localeCompare(b.name, "tr");
+      }
+      if (sortMode === "complete") {
+        return completenessScore(b) - completenessScore(a) || b.reviewCount - a.reviewCount || a.name.localeCompare(b.name, "tr");
+      }
+
+      return Number(b.featured) - Number(a.featured) || completenessScore(b) - completenessScore(a) || a.name.localeCompare(b.name, "tr");
+    });
+  }, [query, restaurants, selectedCity, selectedCountry, selectedFeature, sortMode]);
 
   return (
     <main className="page">
@@ -146,6 +176,26 @@ export function HomeExplorer({
           </p>
           <a className="button primary" href="/owner">İşletme olarak başla</a>
         </div>
+      </section>
+
+      <section className="results-toolbar" aria-label="Sonuç kontrolü">
+        <div>
+          <span className="pill">Sonuçlar</span>
+          <strong>{filteredRestaurants.length} mekan listeleniyor</strong>
+        </div>
+        <label>
+          <span>Sırala</span>
+          <select
+            aria-label="Sıralama"
+            value={sortMode}
+            onChange={(event) => setSortMode(event.target.value as SortMode)}
+          >
+            <option value="featured">Öne çıkan ve güven sinyali</option>
+            <option value="complete">En dolu kayıt</option>
+            <option value="reviews">En çok yorum</option>
+            <option value="name">Ada göre</option>
+          </select>
+        </label>
       </section>
 
       <section className="grid">
