@@ -20,6 +20,10 @@ const featureFilters = [
   { id: "alcohol-free", label: "Alkolsüz" },
   { id: "prayer-room", label: "Mescid" },
   { id: "family-friendly", label: "Aile dostu" },
+  { id: "certified", label: "Sertifikalı" },
+  { id: "with-menu", label: "Menülü" },
+  { id: "with-reviews", label: "Yorumlu" },
+  { id: "precise-location", label: "Konumu net" },
   { id: "featured", label: "Öne çıkan" }
 ] as const;
 
@@ -90,6 +94,10 @@ export function HomeExplorer({
         (selectedFeature === "alcohol-free" && restaurant.alcoholFree) ||
         (selectedFeature === "prayer-room" && restaurant.prayerRoom) ||
         (selectedFeature === "family-friendly" && restaurant.familyFriendly) ||
+        (selectedFeature === "certified" && restaurant.hasCertificate) ||
+        (selectedFeature === "with-menu" && restaurant.menuItemCount > 0) ||
+        (selectedFeature === "with-reviews" && restaurant.reviewCount > 0) ||
+        (selectedFeature === "precise-location" && restaurant.hasPreciseLocation) ||
         (selectedFeature === "featured" && restaurant.featured);
 
       return countryMatch && cityMatch && queryMatch && featureMatch;
