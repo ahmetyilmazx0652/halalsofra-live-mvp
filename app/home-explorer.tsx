@@ -93,6 +93,7 @@ export function HomeExplorer({
   );
   const [query, setQuery] = useState(initialQuery?.trim() ?? "");
   const [sortMode, setSortMode] = useState<SortMode>(isSortMode(initialSort) ? initialSort : "featured");
+  const countryCount = countries.length;
 
   const cityOptions = useMemo(() => {
     if (selectedCountry === ALL_COUNTRIES) {
@@ -103,6 +104,7 @@ export function HomeExplorer({
 
     return countries.find((country) => country.name === selectedCountry)?.cities ?? [];
   }, [countries, selectedCountry]);
+  const visibleCityCount = cityOptions.length;
 
   const filteredRestaurants = useMemo(() => {
     const q = normalize(query);
@@ -211,18 +213,45 @@ export function HomeExplorer({
           </div>
         </div>
         <div className="panel">
-          <h2>İşletmeler için hızlı yayın süreci</h2>
+          <h2>Büyüyen Avrupa helal rehberi</h2>
           <p className="muted">
             {notice}
           </p>
-          <a className="button primary" href="/owner">İşletme olarak başla</a>
+          <div className="mini-stats">
+            <span>{countryCount} ülke</span>
+            <span>{stats.cities} şehir</span>
+            <span>{stats.plans} işletme paketi</span>
+          </div>
+          <div className="detail-actions">
+            <a className="button primary" href="/owner">İşletme olarak başla</a>
+            <a className="button" href="#results">Mekanlara Bak</a>
+          </div>
         </div>
       </section>
 
-      <section className="results-toolbar" aria-label="Sonuç kontrolü">
+      <section className="launch-strip" aria-label="HalalSofra yayın kapsamı">
+        <article>
+          <span className="pill">Kapsam</span>
+          <strong>{countryCount} ülke ve {stats.cities} şehir</strong>
+          <p className="muted">Rehber ülke ve şehir bazında büyüyecek şekilde kuruldu.</p>
+        </article>
+        <article>
+          <span className="pill">Doğrulama</span>
+          <strong>Admin onaylı yayın</strong>
+          <p className="muted">Yeni işletmeler önce kontrol kuyruğuna düşer, sonra yayına alınır.</p>
+        </article>
+        <article>
+          <span className="pill">İşletme</span>
+          <strong>Menü, fotoğraf ve sertifika</strong>
+          <p className="muted">İşletmeler kayıtlarını zamanla tamamlayabilir.</p>
+        </article>
+      </section>
+
+      <section className="results-toolbar" id="results" aria-label="Sonuç kontrolü">
         <div>
           <span className="pill">Sonuçlar</span>
           <strong>{filteredRestaurants.length} mekan listeleniyor</strong>
+          <span className="muted">{selectedCountry === ALL_COUNTRIES ? `${visibleCityCount} şehir taranıyor` : selectedCountry}</span>
         </div>
         <label>
           <span>Sırala</span>

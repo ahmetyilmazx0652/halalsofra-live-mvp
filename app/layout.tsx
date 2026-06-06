@@ -38,6 +38,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <span>HalalSofra</span>
             </a>
             <nav className="nav">
+              <a href="/">Rehber</a>
               <a href="/owner">İşletmeler</a>
               <a className="button primary" href="/owner">Restoranımı Ekle</a>
             </nav>
