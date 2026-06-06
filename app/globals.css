@@ -68,6 +68,9 @@ a {
 
 .nav a,
 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
   background: #fff;
   color: var(--green-dark);
@@ -75,6 +78,9 @@ a {
   border-radius: 10px;
   font-weight: 700;
   font-size: 14px;
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: pointer;
 }
 
 .button.primary {

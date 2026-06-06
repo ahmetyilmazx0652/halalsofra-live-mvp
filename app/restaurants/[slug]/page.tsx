@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { absoluteUrl } from "@/lib/site";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
+import { ShareActions } from "./share-actions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -252,6 +253,7 @@ export default async function RestaurantDetailPage({
   const averageRating = reviews.length > 0
     ? reviews.reduce((total: number, review: any) => total + (review.rating ?? 0), 0) / reviews.length
     : null;
+  const detailUrl = absoluteUrl(`/restaurants/${restaurant.slug}`);
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
@@ -261,7 +263,7 @@ export default async function RestaurantDetailPage({
     telephone: restaurant.phone || undefined,
     email: restaurant.email || undefined,
     servesCuisine: restaurant.cuisine,
-    url: absoluteUrl(`/restaurants/${restaurant.slug}`),
+    url: detailUrl,
     image: photos.map((photo) => photo.storage_path),
     priceRange: priceLabel(restaurant.price_level),
     aggregateRating: averageRating
@@ -337,6 +339,7 @@ export default async function RestaurantDetailPage({
             </a>
             <a className="button" href="#menu">Menü</a>
             <a className="button" href="#reviews">Yorumlar</a>
+            <ShareActions title={restaurant.name} url={detailUrl} />
           </div>
         </div>
 
