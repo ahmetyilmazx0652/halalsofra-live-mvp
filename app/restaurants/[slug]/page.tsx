@@ -17,13 +17,24 @@ function mapsUrl(
   cityName: string | null,
   countryName: string | null,
   lat: number | null,
-  lng: number | null
+  lng: number | null,
+  googlePlaceId: string | null
 ) {
+  if (googlePlaceId) {
+    const destination = [name, address, cityName, countryName].filter(Boolean).join(", ");
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&destination_place_id=${encodeURIComponent(googlePlaceId)}`;
+  }
+
   const destination = lat !== null && lng !== null
     ? `${lat},${lng}`
     : [name, address, cityName, countryName].filter(Boolean).join(", ");
 
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}
+
+function googleSearchUrl(name: string, address: string, cityName: string | null, countryName: string | null) {
+  const query = [name, address, cityName, countryName].filter(Boolean).join(", ");
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 }
 
 function formatMenuPrice(price: number | string | null, currency: string | null) {
@@ -188,7 +199,7 @@ export default async function RestaurantDetailPage({
 
   const result = await supabase
     .from("restaurants")
-    .select("id,name,slug,cuisine,description,address,phone,email,website,instagram,opening_hours,lat,lng,price_level,halal_grade,alcohol_free,prayer_room,family_friendly,subscription_plan,cities(name),countries(name,flag)")
+    .select("id,name,slug,cuisine,description,address,phone,email,website,instagram,opening_hours,google_place_id,lat,lng,price_level,halal_grade,alcohol_free,prayer_room,family_friendly,subscription_plan,cities(name),countries(name,flag)")
     .eq("slug", params.slug)
     .eq("status", "published")
     .single();
@@ -236,6 +247,7 @@ export default async function RestaurantDetailPage({
     .order("created_at", { ascending: false })
     .limit(20);
   const reviews = reviewsResult.data ?? [];
+  const menuItemCount = menuCategories.reduce((total: number, category: any) => total + category.menu_items.length, 0);
   const averageRating = reviews.length > 0
     ? reviews.reduce((total: number, review: any) => total + (review.rating ?? 0), 0) / reviews.length
     : null;
@@ -294,7 +306,8 @@ export default async function RestaurantDetailPage({
                 city?.name ?? null,
                 country?.name ?? null,
                 restaurant.lat,
-                restaurant.lng
+                restaurant.lng,
+                restaurant.google_place_id
               )}
               target="_blank"
               rel="noreferrer"
@@ -302,6 +315,16 @@ export default async function RestaurantDetailPage({
               Yol Tarifi
             </a>
             {restaurant.phone ? <a className="button" href={`tel:${restaurant.phone}`}>Ara</a> : null}
+            {website ? <a className="button" href={website} target="_blank" rel="noreferrer">Web</a> : null}
+            {instagram ? <a className="button" href={instagram} target="_blank" rel="noreferrer">Instagram</a> : null}
+            <a
+              className="button"
+              href={googleSearchUrl(restaurant.name, restaurant.address, city?.name ?? null, country?.name ?? null)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Google'da Ara
+            </a>
           </div>
         </div>
 
@@ -322,6 +345,29 @@ export default async function RestaurantDetailPage({
             ) : null}
           </div>
         </aside>
+      </section>
+
+      <section className="trust-strip" aria-label="Restoran kayıt özeti">
+        <article className="trust-item">
+          <span>Konum</span>
+          <strong>{restaurant.google_place_id || (restaurant.lat !== null && restaurant.lng !== null) ? "Doğrulanabilir" : "Adresle aranır"}</strong>
+          <p>{restaurant.google_place_id ? "Google Place ID bağlı" : restaurant.lat !== null && restaurant.lng !== null ? "Koordinat kayıtlı" : "Koordinat bekleniyor"}</p>
+        </article>
+        <article className="trust-item">
+          <span>Sertifika</span>
+          <strong>{certificate ? "Belge var" : "Belge bekleniyor"}</strong>
+          <p>{certificate?.body ?? "Admin onayından sonra burada görünür"}</p>
+        </article>
+        <article className="trust-item">
+          <span>Menü</span>
+          <strong>{menuItemCount > 0 ? `${menuItemCount} ürün` : "Henüz yok"}</strong>
+          <p>{menuCategories.length > 0 ? `${menuCategories.length} kategori yayında` : "İşletme menü ekleyebilir"}</p>
+        </article>
+        <article className="trust-item">
+          <span>Yorum</span>
+          <strong>{averageRating ? averageRating.toFixed(1) : "Bekleniyor"}</strong>
+          <p>{reviews.length > 0 ? `${reviews.length} onaylı yorum` : "İlk yorum bekleniyor"}</p>
+        </article>
       </section>
 
       {photos.length > 0 ? (

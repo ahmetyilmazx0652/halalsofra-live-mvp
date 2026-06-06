@@ -476,6 +476,44 @@ input[type="checkbox"] {
   margin-top: 16px;
 }
 
+.trust-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.trust-item {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.trust-item span {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.trust-item strong {
+  display: block;
+  margin-top: 12px;
+  color: var(--text);
+  font-size: 22px;
+}
+
+.trust-item p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .photo-panel {
   margin-top: 20px;
 }
@@ -716,6 +754,7 @@ input[type="checkbox"] {
   .filters,
   .grid,
   .admin-metrics,
+  .trust-strip,
   .plans,
   .form-grid,
   .status-steps,
