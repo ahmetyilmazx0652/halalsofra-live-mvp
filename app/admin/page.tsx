@@ -60,6 +60,15 @@ type AdminReview = {
   restaurantSlug: string;
 };
 
+type AdminMetrics = {
+  pendingRestaurants: number;
+  publishedRestaurants: number;
+  archivedRestaurants: number;
+  pendingReviews: number;
+  approvedReviews: number;
+  missingCoordinates: number;
+};
+
 function mapRestaurant(item: any): AdminRestaurant {
   return {
     id: item.id,
@@ -202,6 +211,58 @@ async function getArchivedRestaurants() {
 
   if (result.error) return [];
   return (result.data ?? []).map(mapRestaurant);
+}
+
+async function countRows(
+  table: "restaurants" | "reviews",
+  buildQuery: (request: any) => any
+) {
+  if (!hasSupabaseConfig || !supabase) return 0;
+
+  const result = await buildQuery(
+    supabase.from(table).select("id", { count: "exact", head: true })
+  );
+
+  if (result.error) return 0;
+  return result.count ?? 0;
+}
+
+async function getAdminMetrics(): Promise<AdminMetrics> {
+  if (!hasSupabaseConfig || !supabase) {
+    return {
+      pendingRestaurants: 0,
+      publishedRestaurants: 0,
+      archivedRestaurants: 0,
+      pendingReviews: 0,
+      approvedReviews: 0,
+      missingCoordinates: 0
+    };
+  }
+
+  const [
+    pendingRestaurants,
+    publishedRestaurants,
+    archivedRestaurants,
+    pendingReviews,
+    approvedReviews,
+    missingCoordinates
+  ] = await Promise.all([
+    countRows("restaurants", (request) => request.eq("status", "pending")),
+    countRows("restaurants", (request) => request.eq("status", "published")),
+    countRows("restaurants", (request) => request.eq("status", "suspended")),
+    countRows("reviews", (request) => request.eq("status", "pending")),
+    countRows("reviews", (request) => request.eq("status", "approved")),
+    countRows("restaurants", (request) => request.eq("status", "published").or("lat.is.null,lng.is.null"))
+  ]);
+
+  return {
+    pendingRestaurants,
+    publishedRestaurants,
+    archivedRestaurants,
+    pendingReviews,
+    approvedReviews,
+    missingCoordinates
+  };
 }
 
 function cleanText(value: FormDataEntryValue | null) {
@@ -595,13 +656,14 @@ export default async function AdminPage({
   }
 
   const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
-  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants, adminCities] = await Promise.all([
+  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants, adminCities, adminMetrics] = await Promise.all([
     getPendingRestaurants(),
     getPendingReviews(),
     getApprovedReviews(),
     getPublishedRestaurants(publishedQuery),
     getArchivedRestaurants(),
-    getAdminCities()
+    getAdminCities(),
+    getAdminMetrics()
   ]);
 
   return (
@@ -642,6 +704,33 @@ export default async function AdminPage({
         {searchParams?.error ? (
           <div className="notice error">İşlem yapılamadı: {decodeURIComponent(searchParams.error)}</div>
         ) : null}
+      </section>
+
+      <section className="admin-metrics" aria-label="Admin özet metrikleri">
+        <div className="metric-card">
+          <strong>{adminMetrics.pendingRestaurants}</strong>
+          <span>bekleyen restoran</span>
+        </div>
+        <div className="metric-card">
+          <strong>{adminMetrics.publishedRestaurants}</strong>
+          <span>canlı restoran</span>
+        </div>
+        <div className="metric-card">
+          <strong>{adminMetrics.pendingReviews}</strong>
+          <span>bekleyen yorum</span>
+        </div>
+        <div className="metric-card">
+          <strong>{adminMetrics.approvedReviews}</strong>
+          <span>yayındaki yorum</span>
+        </div>
+        <div className="metric-card">
+          <strong>{adminMetrics.missingCoordinates}</strong>
+          <span>koordinat eksik</span>
+        </div>
+        <div className="metric-card">
+          <strong>{adminMetrics.archivedRestaurants}</strong>
+          <span>arşivlenen kayıt</span>
+        </div>
       </section>
 
       <section className="grid">
