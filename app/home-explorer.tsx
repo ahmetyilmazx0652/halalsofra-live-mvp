@@ -9,6 +9,11 @@ type HomeExplorerProps = {
   stats: HomeData["stats"];
   source: HomeData["source"];
   notice?: string;
+  initialCountry?: string;
+  initialCity?: string;
+  initialQuery?: string;
+  initialFeature?: string;
+  initialSort?: string;
 };
 
 const ALL_CITIES = "__all_cities__";
@@ -29,6 +34,14 @@ const featureFilters = [
 
 type FeatureFilter = typeof featureFilters[number]["id"];
 type SortMode = "featured" | "complete" | "name" | "reviews";
+
+function isFeatureFilter(value: string | undefined): value is FeatureFilter {
+  return featureFilters.some((filter) => filter.id === value);
+}
+
+function isSortMode(value: string | undefined): value is SortMode {
+  return value === "featured" || value === "complete" || value === "name" || value === "reviews";
+}
 
 function normalize(value: string) {
   return value.toLocaleLowerCase("tr").trim();
@@ -53,13 +66,33 @@ export function HomeExplorer({
   restaurants,
   stats,
   source,
-  notice
+  notice,
+  initialCountry,
+  initialCity,
+  initialQuery,
+  initialFeature,
+  initialSort
 }: HomeExplorerProps) {
-  const [selectedCountry, setSelectedCountry] = useState(ALL_COUNTRIES);
-  const [selectedCity, setSelectedCity] = useState(ALL_CITIES);
-  const [selectedFeature, setSelectedFeature] = useState<FeatureFilter>("all");
-  const [query, setQuery] = useState("");
-  const [sortMode, setSortMode] = useState<SortMode>("featured");
+  const hasInitialCountry = typeof initialCountry === "string" && countries.some((country) => country.name === initialCountry);
+  const initialCountryValue = hasInitialCountry
+    ? initialCountry
+    : ALL_COUNTRIES;
+  const hasInitialCity = typeof initialCity === "string" && (
+    initialCountryValue === ALL_COUNTRIES
+      ? countries.some((country) => country.cities.includes(initialCity))
+      : countries.find((country) => country.name === initialCountryValue)?.cities.includes(initialCity)
+  );
+  const initialCityValue = hasInitialCity
+    ? initialCity
+    : ALL_CITIES;
+
+  const [selectedCountry, setSelectedCountry] = useState(initialCountryValue);
+  const [selectedCity, setSelectedCity] = useState(initialCityValue);
+  const [selectedFeature, setSelectedFeature] = useState<FeatureFilter>(
+    isFeatureFilter(initialFeature) ? initialFeature : "all"
+  );
+  const [query, setQuery] = useState(initialQuery?.trim() ?? "");
+  const [sortMode, setSortMode] = useState<SortMode>(isSortMode(initialSort) ? initialSort : "featured");
 
   const cityOptions = useMemo(() => {
     if (selectedCountry === ALL_COUNTRIES) {

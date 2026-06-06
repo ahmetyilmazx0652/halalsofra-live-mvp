@@ -279,6 +279,10 @@ export default async function RestaurantDetailPage({
         }
       : undefined
   };
+  const countryHref = country?.name ? `/?country=${encodeURIComponent(country.name)}` : "/";
+  const cityHref = country?.name && city?.name
+    ? `/?country=${encodeURIComponent(country.name)}&city=${encodeURIComponent(city.name)}`
+    : countryHref;
 
   return (
     <main className="page">
@@ -288,8 +292,8 @@ export default async function RestaurantDetailPage({
       />
       <nav className="breadcrumb" aria-label="Sayfa yolu">
         <a href="/">Restoranlar</a>
-        <span>{country?.flag} {country?.name ?? "Bilinmiyor"}</span>
-        <span>{city?.name ?? "Bilinmiyor"}</span>
+        <a href={countryHref}>{country?.flag} {country?.name ?? "Bilinmiyor"}</a>
+        <a href={cityHref}>{city?.name ?? "Bilinmiyor"}</a>
       </nav>
       <section className="detail-hero">
         <div className="panel">
