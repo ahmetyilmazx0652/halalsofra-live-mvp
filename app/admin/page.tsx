@@ -320,6 +320,10 @@ function mapsSearchUrl(item: AdminRestaurant) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
+function placeIdFinderUrl() {
+  return "https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder";
+}
+
 function telUrl(phone: string | null) {
   if (!phone) return null;
   const cleaned = phone.replace(/[^\d+]/g, "");
@@ -430,6 +434,7 @@ async function updatePendingRestaurant(formData: FormData) {
     next_certificate_body: cleanText(formData.get("certificate_body")),
     next_certificate_number: cleanText(formData.get("certificate_number")),
     next_certificate_url: cleanText(formData.get("certificate_url")),
+    next_google_place_id: cleanText(formData.get("google_place_id")),
     next_lat: lat,
     next_lng: lng
   });
@@ -481,6 +486,7 @@ async function updatePublishedRestaurant(formData: FormData) {
     next_certificate_body: cleanText(formData.get("certificate_body")),
     next_certificate_number: cleanText(formData.get("certificate_number")),
     next_certificate_url: cleanText(formData.get("certificate_url")),
+    next_google_place_id: cleanText(formData.get("google_place_id")),
     next_lat: lat,
     next_lng: lng
   });
@@ -801,6 +807,7 @@ export default async function AdminPage({
             </div>
             <div className="detail-actions">
               <a className="button" href={mapsSearchUrl(item)} target="_blank" rel="noreferrer">Haritada Kontrol Et</a>
+              <a className="button" href={placeIdFinderUrl()} target="_blank" rel="noreferrer">Place ID Bul</a>
               {telUrl(item.phone) ? <a className="button" href={telUrl(item.phone) ?? undefined}>Ara</a> : null}
               {mailUrl(item.email) ? <a className="button" href={mailUrl(item.email) ?? undefined}>E-posta</a> : null}
               {item.certificateUrl ? <a className="button" href={item.certificateUrl} target="_blank" rel="noreferrer">Sertifika Aç</a> : null}
@@ -831,6 +838,7 @@ export default async function AdminPage({
                   <input name="certificate_body" defaultValue={item.certificateBody ?? ""} placeholder="Sertifika kurumu" />
                   <input name="certificate_number" defaultValue={item.certificateNumber ?? ""} placeholder="Sertifika numarası" />
                   <input name="certificate_url" defaultValue={item.certificateUrl ?? ""} placeholder="Sertifika PDF/resim linki" />
+                  <input name="google_place_id" defaultValue={item.googlePlaceId ?? ""} placeholder="Google Place ID" />
                   <input name="lat" defaultValue={item.lat ?? ""} inputMode="decimal" placeholder="Enlem, örn. 52.5200" />
                   <input name="lng" defaultValue={item.lng ?? ""} inputMode="decimal" placeholder="Boylam, örn. 13.4050" />
                 </div>
@@ -1013,6 +1021,7 @@ export default async function AdminPage({
             </div>
             <div className="detail-actions">
               <a className="button" href={mapsSearchUrl(item)} target="_blank" rel="noreferrer">Haritada Kontrol Et</a>
+              <a className="button" href={placeIdFinderUrl()} target="_blank" rel="noreferrer">Place ID Bul</a>
               <a className="button" href={`/restaurants/${item.slug}`}>Detayı Aç</a>
               {telUrl(item.phone) ? <a className="button" href={telUrl(item.phone) ?? undefined}>Ara</a> : null}
               {mailUrl(item.email) ? <a className="button" href={mailUrl(item.email) ?? undefined}>E-posta</a> : null}
@@ -1044,6 +1053,7 @@ export default async function AdminPage({
                   <input name="certificate_body" defaultValue={item.certificateBody ?? ""} placeholder="Sertifika kurumu" />
                   <input name="certificate_number" defaultValue={item.certificateNumber ?? ""} placeholder="Sertifika numarası" />
                   <input name="certificate_url" defaultValue={item.certificateUrl ?? ""} placeholder="Sertifika PDF/resim linki" />
+                  <input name="google_place_id" defaultValue={item.googlePlaceId ?? ""} placeholder="Google Place ID" />
                   <input name="lat" defaultValue={item.lat ?? ""} inputMode="decimal" placeholder="Enlem, örn. 52.5200" />
                   <input name="lng" defaultValue={item.lng ?? ""} inputMode="decimal" placeholder="Boylam, örn. 13.4050" />
                 </div>

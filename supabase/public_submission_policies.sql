@@ -81,6 +81,7 @@ add column if not exists opening_hours text;
 drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text);
 drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, text, text, double precision, double precision);
 drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, uuid, text, text, text, double precision, double precision);
+drop function if exists public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, uuid, text, text, text, text, double precision, double precision);
 
 create or replace function public.update_pending_restaurant(
   target_restaurant_id uuid,
@@ -95,6 +96,7 @@ create or replace function public.update_pending_restaurant(
   next_certificate_body text,
   next_certificate_number text,
   next_certificate_url text,
+  next_google_place_id text,
   next_lat double precision,
   next_lng double precision
 )
@@ -132,6 +134,7 @@ begin
       halal_grade = next_halal_grade::halal_grade,
       city_id = coalesce(next_city_id, city_id),
       country_id = coalesce(next_country_id, country_id),
+      google_place_id = nullif(trim(next_google_place_id), ''),
       lat = coalesce(next_lat, lat),
       lng = coalesce(next_lng, lng),
       updated_at = now()
@@ -178,12 +181,13 @@ begin
 end;
 $$;
 
-grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, uuid, text, text, text, double precision, double precision) to anon, authenticated;
+grant execute on function public.update_pending_restaurant(uuid, text, text, text, text, text, text, text, uuid, text, text, text, text, double precision, double precision) to anon, authenticated;
 
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text);
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision);
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, text, boolean, boolean, boolean, text, text, text, double precision, double precision);
 drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, text, uuid, boolean, boolean, boolean, boolean, text, text, text, double precision, double precision);
+drop function if exists public.update_published_restaurant(uuid, text, text, text, text, text, text, text, uuid, boolean, boolean, boolean, boolean, text, text, text, text, double precision, double precision);
 
 create or replace function public.update_published_restaurant(
   target_restaurant_id uuid,
@@ -202,6 +206,7 @@ create or replace function public.update_published_restaurant(
   next_certificate_body text,
   next_certificate_number text,
   next_certificate_url text,
+  next_google_place_id text,
   next_lat double precision,
   next_lng double precision
 )
@@ -243,6 +248,7 @@ begin
       alcohol_free = coalesce(next_alcohol_free, false),
       prayer_room = coalesce(next_prayer_room, false),
       family_friendly = coalesce(next_family_friendly, false),
+      google_place_id = nullif(trim(next_google_place_id), ''),
       lat = coalesce(next_lat, lat),
       lng = coalesce(next_lng, lng),
       updated_at = now()
@@ -289,7 +295,7 @@ begin
 end;
 $$;
 
-grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, text, uuid, boolean, boolean, boolean, boolean, text, text, text, double precision, double precision) to anon, authenticated;
+grant execute on function public.update_published_restaurant(uuid, text, text, text, text, text, text, text, uuid, boolean, boolean, boolean, boolean, text, text, text, text, double precision, double precision) to anon, authenticated;
 
 drop function if exists public.archive_published_restaurant(uuid);
 
