@@ -538,6 +538,37 @@ input[type="checkbox"] {
   font-weight: 700;
 }
 
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.breadcrumb a,
+.breadcrumb span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  padding: 7px 12px;
+}
+
+.breadcrumb a {
+  color: var(--green-dark);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  border-color: var(--green);
+}
+
 .detail-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);

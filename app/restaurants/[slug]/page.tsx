@@ -286,6 +286,11 @@ export default async function RestaurantDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
+      <nav className="breadcrumb" aria-label="Sayfa yolu">
+        <a href="/">Restoranlar</a>
+        <span>{country?.flag} {country?.name ?? "Bilinmiyor"}</span>
+        <span>{city?.name ?? "Bilinmiyor"}</span>
+      </nav>
       <section className="detail-hero">
         <div className="panel">
           <div className="card-top">
@@ -326,6 +331,8 @@ export default async function RestaurantDetailPage({
             >
               Google'da Ara
             </a>
+            <a className="button" href="#menu">Menü</a>
+            <a className="button" href="#reviews">Yorumlar</a>
           </div>
         </div>
 
@@ -419,7 +426,7 @@ export default async function RestaurantDetailPage({
         </article>
       </section>
 
-      <section className="panel menu-panel">
+      <section className="panel menu-panel" id="menu">
         <span className="pill">Menü</span>
         <h2>Menü ve fiyatlar</h2>
         {menuCategories.length > 0 ? (
@@ -450,7 +457,7 @@ export default async function RestaurantDetailPage({
         )}
       </section>
 
-      <section className="panel reviews-panel">
+      <section className="panel reviews-panel" id="reviews">
         <div className="section-heading">
           <div>
             <span className="pill">Yorumlar</span>
