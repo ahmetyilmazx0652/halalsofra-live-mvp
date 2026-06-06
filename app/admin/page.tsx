@@ -32,6 +32,7 @@ type AdminRestaurant = {
   lat: number | null;
   lng: number | null;
   hasCertificate: boolean;
+  menuItemCount: number;
   certificateBody: string | null;
   certificateNumber: string | null;
   certificateUrl: string | null;
@@ -39,6 +40,8 @@ type AdminRestaurant = {
   cityName: string;
   countryName: string;
 };
+
+type PublishedQualityFilter = "all" | "missing-location" | "missing-certificate" | "missing-photo" | "missing-menu";
 
 type AdminCityOption = {
   id: string;
@@ -94,6 +97,11 @@ function mapRestaurant(item: any): AdminRestaurant {
     lat: item.lat,
     lng: item.lng,
     hasCertificate: (item.certificates ?? []).length > 0,
+    menuItemCount: (item.menu_categories ?? []).reduce(
+      (total: number, category: any) =>
+        total + (category.menu_items ?? []).filter((menuItem: any) => menuItem.is_available).length,
+      0
+    ),
     certificateBody: item.certificates?.[0]?.body ?? null,
     certificateNumber: item.certificates?.[0]?.certificate_number ?? null,
     certificateUrl: item.certificates?.[0]?.storage_path ?? null,
@@ -125,7 +133,7 @@ async function getPendingRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
+    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -179,12 +187,20 @@ async function getApprovedReviews() {
   return (result.data ?? []).map(mapReview);
 }
 
-async function getPublishedRestaurants(query?: string) {
+function matchesQualityFilter(item: AdminRestaurant, quality: PublishedQualityFilter) {
+  if (quality === "missing-location") return !item.googlePlaceId && (item.lat === null || item.lng === null);
+  if (quality === "missing-certificate") return !item.hasCertificate;
+  if (quality === "missing-photo") return !item.photoUrl;
+  if (quality === "missing-menu") return item.menuItemCount === 0;
+  return true;
+}
+
+async function getPublishedRestaurants(query?: string, quality: PublishedQualityFilter = "all") {
   if (!hasSupabaseConfig || !supabase) return [];
 
   let request = supabase
     .from("restaurants")
-    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
+    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order)")
     .eq("status", "published");
 
   if (query) {
@@ -193,10 +209,12 @@ async function getPublishedRestaurants(query?: string) {
 
   const result = await request
     .order("updated_at", { ascending: false })
-    .limit(query ? 60 : 24);
+    .limit(query || quality !== "all" ? 100 : 24);
 
   if (result.error) return [];
-  return (result.data ?? []).map(mapRestaurant);
+  return (result.data ?? [])
+    .map(mapRestaurant)
+    .filter((item) => matchesQualityFilter(item, quality));
 }
 
 async function getArchivedRestaurants() {
@@ -204,7 +222,7 @@ async function getArchivedRestaurants() {
 
   const result = await supabase
     .from("restaurants")
-    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),restaurant_photos(storage_path,sort_order)")
+    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order)")
     .eq("status", "suspended")
     .order("updated_at", { ascending: false })
     .limit(24);
@@ -281,6 +299,19 @@ function cleanSearch(value: string) {
   return value.replace(/[%(),]/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function cleanPublishedQualityFilter(value: string | undefined): PublishedQualityFilter {
+  if (
+    value === "missing-location" ||
+    value === "missing-certificate" ||
+    value === "missing-photo" ||
+    value === "missing-menu"
+  ) {
+    return value;
+  }
+
+  return "all";
+}
+
 function mapsSearchUrl(item: AdminRestaurant) {
   const query = item.lat !== null && item.lng !== null
     ? `${item.lat},${item.lng}`
@@ -305,7 +336,8 @@ function missingChecks(item: AdminRestaurant) {
     item.phone ? null : "Telefon eksik",
     item.photoUrl ? null : "Fotoğraf eksik",
     item.hasCertificate ? null : "Sertifika eksik",
-    item.lat !== null && item.lng !== null ? null : "Koordinat eksik"
+    item.menuItemCount > 0 ? null : "Menü eksik",
+    item.googlePlaceId || (item.lat !== null && item.lng !== null) ? null : "Konum net değil"
   ].filter(Boolean) as string[];
 }
 
@@ -620,7 +652,7 @@ async function respondToReview(formData: FormData) {
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; error?: string; q?: string };
+  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; error?: string; q?: string; quality?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -656,11 +688,12 @@ export default async function AdminPage({
   }
 
   const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
+  const publishedQuality = cleanPublishedQualityFilter(searchParams?.quality);
   const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants, adminCities, adminMetrics] = await Promise.all([
     getPendingRestaurants(),
     getPendingReviews(),
     getApprovedReviews(),
-    getPublishedRestaurants(publishedQuery),
+    getPublishedRestaurants(publishedQuery, publishedQuality),
     getArchivedRestaurants(),
     getAdminCities(),
     getAdminMetrics()
@@ -927,11 +960,19 @@ export default async function AdminPage({
         </p>
         <form className="form-grid" style={{ marginTop: 14 }}>
           <input name="q" defaultValue={publishedQuery} placeholder="Yayındaki restoranlarda ara" />
+          <select name="quality" defaultValue={publishedQuality} aria-label="Kayıt kalitesi filtresi">
+            <option value="all">Tüm canlı kayıtlar</option>
+            <option value="missing-location">Konumu net olmayanlar</option>
+            <option value="missing-certificate">Sertifikası eksik olanlar</option>
+            <option value="missing-menu">Menüsü eksik olanlar</option>
+            <option value="missing-photo">Fotoğrafı eksik olanlar</option>
+          </select>
           <button className="button primary" type="submit">Ara</button>
         </form>
-        {publishedQuery ? (
+        {publishedQuery || publishedQuality !== "all" ? (
           <div className="detail-actions">
             <span className="pill">{publishedRestaurants.length} sonuç</span>
+            {publishedQuality !== "all" ? <span className="pill">Kalite filtresi aktif</span> : null}
             <a className="button" href="/admin">Aramayı Temizle</a>
           </div>
         ) : null}
@@ -958,6 +999,7 @@ export default async function AdminPage({
               {item.googlePlaceId ? <span>Place ID var</span> : null}
               {item.lat !== null && item.lng !== null ? <span>Koordinat var</span> : null}
               {item.hasCertificate ? <span>Sertifika var</span> : null}
+              {item.menuItemCount > 0 ? <span>{item.menuItemCount} menü ürünü</span> : null}
             </div>
             <div className="feature-row">
               {missingChecks(item).map((label) => (
