@@ -672,6 +672,26 @@ input[type="checkbox"] {
   margin-top: 16px;
 }
 
+.correction-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px;
+}
+
+.correction-panel h2 {
+  margin: 10px 0 6px;
+}
+
+.correction-panel p {
+  margin: 0;
+}
+
 .trust-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -970,6 +990,11 @@ input[type="checkbox"] {
 
   .results-toolbar select {
     min-width: 0;
+  }
+
+  .correction-panel {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .section-heading {

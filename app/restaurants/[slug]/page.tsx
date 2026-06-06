@@ -549,6 +549,22 @@ export default async function RestaurantDetailPage({
           </div>
         )}
       </section>
+
+      <section className="correction-panel" aria-label="Bilgi düzeltme">
+        <div>
+          <span className="pill">Bilgi güncelleme</span>
+          <h2>Bu kayıtta eksik veya yanlış bilgi mi var?</h2>
+          <p className="muted">
+            Adres, menü, sertifika veya çalışma saatleri değiştiyse işletme başvuru formundan güncel bilgileri gönderebilirsiniz.
+          </p>
+        </div>
+        <div className="detail-actions">
+          <a className="button primary" href={`/owner?restaurant=${encodeURIComponent(restaurant.name)}#restaurant-application`}>
+            Bilgi Düzeltme Gönder
+          </a>
+          <a className="button" href="/">Listeye Dön</a>
+        </div>
+      </section>
     </main>
   );
 }
