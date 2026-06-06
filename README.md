@@ -19,7 +19,8 @@ npm run dev
 4. `.env.local` içine şu değerleri gir:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `NEXT_PUBLIC_SITE_URL` (örnek: `https://halalsofra.com`)
+   - `ADMIN_PASSCODE`
 
 ## Stripe
 

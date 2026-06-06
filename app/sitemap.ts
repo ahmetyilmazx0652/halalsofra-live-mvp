@@ -1,22 +1,21 @@
 import type { MetadataRoute } from "next";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
+import { absoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const siteUrl = "https://halalsofra-live-mvp.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const baseRoutes: MetadataRoute.Sitemap = [
     {
-      url: siteUrl,
+      url: absoluteUrl(),
       lastModified: now,
       changeFrequency: "daily",
       priority: 1
     },
     {
-      url: `${siteUrl}/owner`,
+      url: absoluteUrl("/owner"),
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.7
@@ -38,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const restaurantRoutes = (result.data ?? []).map((restaurant) => ({
-    url: `${siteUrl}/restaurants/${restaurant.slug}`,
+    url: absoluteUrl(`/restaurants/${restaurant.slug}`),
     lastModified: restaurant.updated_at ? new Date(restaurant.updated_at) : now,
     changeFrequency: "weekly" as const,
     priority: 0.8

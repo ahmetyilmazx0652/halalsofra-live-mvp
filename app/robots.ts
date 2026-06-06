@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
-
-const siteUrl = "https://halalsofra-live-mvp.vercel.app";
+import { absoluteUrl } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -9,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/admin"]
     },
-    sitemap: `${siteUrl}/sitemap.xml`
+    sitemap: absoluteUrl("/sitemap.xml")
   };
 }

@@ -1,6 +1,7 @@
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { absoluteUrl } from "@/lib/site";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -260,7 +261,7 @@ export default async function RestaurantDetailPage({
     telephone: restaurant.phone || undefined,
     email: restaurant.email || undefined,
     servesCuisine: restaurant.cuisine,
-    url: `https://halalsofra-live-mvp.vercel.app/restaurants/${restaurant.slug}`,
+    url: absoluteUrl(`/restaurants/${restaurant.slug}`),
     image: photos.map((photo) => photo.storage_path),
     priceRange: priceLabel(restaurant.price_level),
     aggregateRating: averageRating
