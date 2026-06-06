@@ -740,33 +740,33 @@ export default async function AdminPage({
       </section>
 
       <section className="admin-metrics" aria-label="Admin özet metrikleri">
-        <div className="metric-card">
+        <a className="metric-card" href="#pending-restaurants">
           <strong>{adminMetrics.pendingRestaurants}</strong>
           <span>bekleyen restoran</span>
-        </div>
-        <div className="metric-card">
+        </a>
+        <a className="metric-card" href="#published-restaurants">
           <strong>{adminMetrics.publishedRestaurants}</strong>
           <span>canlı restoran</span>
-        </div>
-        <div className="metric-card">
+        </a>
+        <a className="metric-card" href="#pending-reviews">
           <strong>{adminMetrics.pendingReviews}</strong>
           <span>bekleyen yorum</span>
-        </div>
-        <div className="metric-card">
+        </a>
+        <a className="metric-card" href="#approved-reviews">
           <strong>{adminMetrics.approvedReviews}</strong>
           <span>yayındaki yorum</span>
-        </div>
-        <div className="metric-card">
+        </a>
+        <a className="metric-card" href="/admin?quality=missing-location#published-restaurants">
           <strong>{adminMetrics.missingCoordinates}</strong>
           <span>koordinat eksik</span>
-        </div>
-        <div className="metric-card">
+        </a>
+        <a className="metric-card" href="#archived-restaurants">
           <strong>{adminMetrics.archivedRestaurants}</strong>
           <span>arşivlenen kayıt</span>
-        </div>
+        </a>
       </section>
 
-      <section className="grid">
+      <section className="grid" id="pending-restaurants">
         {pendingRestaurants.map((item) => (
           <article className="card admin-card" key={item.id}>
             <div className="card-top">
@@ -862,7 +862,7 @@ export default async function AdminPage({
         </section>
       ) : null}
 
-      <section className="panel" style={{ marginTop: 24 }}>
+      <section className="panel" id="pending-reviews" style={{ marginTop: 24 }}>
         <span className="pill">Yorum Onayı</span>
         <h2>Bekleyen kullanıcı yorumları.</h2>
         <p className="muted">
@@ -908,7 +908,7 @@ export default async function AdminPage({
         </section>
       ) : null}
 
-      <section className="panel" style={{ marginTop: 24 }}>
+      <section className="panel" id="approved-reviews" style={{ marginTop: 24 }}>
         <span className="pill">Yorum Yanıtları</span>
         <h2>Yayındaki yorumlara cevap ver.</h2>
         <p className="muted">
@@ -952,7 +952,7 @@ export default async function AdminPage({
         </section>
       ) : null}
 
-      <section className="panel" style={{ marginTop: 24 }}>
+      <section className="panel" id="published-restaurants" style={{ marginTop: 24 }}>
         <span className="pill">Yayındaki Restoranlar</span>
         <h2>Canlı kayıtları düzenle.</h2>
         <p className="muted">
@@ -1075,7 +1075,7 @@ export default async function AdminPage({
         </section>
       ) : null}
 
-      <section className="panel" style={{ marginTop: 24 }}>
+      <section className="panel" id="archived-restaurants" style={{ marginTop: 24 }}>
         <span className="pill">Arşiv</span>
         <h2>Yayından kaldırılan restoranlar.</h2>
         <p className="muted">
