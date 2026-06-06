@@ -405,6 +405,77 @@ input[type="checkbox"] {
   gap: 12px;
 }
 
+.owner-form {
+  display: grid;
+  gap: 14px;
+}
+
+.owner-form h3 {
+  margin: 8px 0 0;
+}
+
+.required-summary {
+  display: grid;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--green-soft);
+  padding: 14px;
+}
+
+.required-summary strong {
+  color: var(--green-dark);
+  font-size: 18px;
+}
+
+.required-summary p {
+  margin: 0;
+}
+
+.optional-section {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0;
+  overflow: hidden;
+}
+
+.optional-section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  color: var(--green-dark);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.optional-section summary small {
+  border-radius: 999px;
+  background: var(--green-soft);
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+.optional-section > p,
+.optional-section > input,
+.optional-section > .form-grid,
+.optional-section > .menu-input-row {
+  margin-left: 14px;
+  margin-right: 14px;
+}
+
+.optional-section > p {
+  margin-top: 0;
+}
+
+.optional-section > input,
+.optional-section > .form-grid,
+.optional-section > .menu-input-row:last-child {
+  margin-bottom: 14px;
+}
+
 .application-guide {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

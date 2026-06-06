@@ -301,12 +301,18 @@ export default async function OwnerPage({
             </div>
           </div>
         ) : (
-        <form action={submitRestaurant}>
+        <form action={submitRestaurant} className="owner-form">
+          <div className="required-summary">
+            <span className="pill">Sadece 3 zorunlu alan</span>
+            <strong>Restoran adı, ülke/şehir ve tam adres.</strong>
+            <p className="muted">Diğer alanlar isteğe bağlıdır; admin panelinde daha sonra tamamlanabilir.</p>
+          </div>
+          <h3>Temel bilgiler</h3>
           <div className="form-grid">
             <input name="name" placeholder="Restoran adı (zorunlu)" required />
             <input name="phone" placeholder="Telefon (opsiyonel)" />
             <input name="email" type="email" placeholder="E-posta (opsiyonel)" />
-            <input name="website" type="url" placeholder="Web sitesi, örn. https://..." />
+            <input name="website" placeholder="Web sitesi, örn. halalsofra.com (opsiyonel)" />
             <input name="instagram" placeholder="Instagram, örn. @halalsofra" />
             <input name="opening_hours" placeholder="Çalışma saatleri, örn. Her gün 11:00-22:00" />
             <select name="city_id" required>
@@ -349,8 +355,11 @@ export default async function OwnerPage({
             </select>
           </div>
           <textarea name="description" style={{ marginTop: 12 }} placeholder="Kısa açıklama (opsiyonel)" />
-          <div className="menu-form">
-            <h3>Menüden örnekler</h3>
+          <details className="optional-section">
+            <summary>
+              <span>Menüden örnekler</span>
+              <small>Opsiyonel</small>
+            </summary>
             <p className="muted">Opsiyonel. İsterseniz en popüler 1-3 ürünü girin; boş bırakılırsa başvuru yine gönderilir.</p>
             <input name="menu_category" placeholder="Menü kategorisi, örn. Popüler / Kebaplar / Tatlılar (opsiyonel)" />
             {[1, 2, 3].map((index) => (
@@ -360,18 +369,24 @@ export default async function OwnerPage({
                 <input name={`menu_price_${index}`} inputMode="decimal" placeholder="Fiyat € (opsiyonel)" />
               </div>
             ))}
-          </div>
-          <div className="menu-form">
-            <h3>Fotoğraflar</h3>
+          </details>
+          <details className="optional-section">
+            <summary>
+              <span>Fotoğraflar</span>
+              <small>Opsiyonel</small>
+            </summary>
             <p className="muted">Opsiyonel. Şimdilik fotoğraf linki ekleyin; dosya yükleme daha sonra bağlanacak.</p>
             <div className="form-grid">
-              <input name="photo_url_1" type="url" placeholder="Fotoğraf linki 1, örn. https://..." />
-              <input name="photo_url_2" type="url" placeholder="Fotoğraf linki 2, örn. https://..." />
-              <input name="photo_url_3" type="url" placeholder="Fotoğraf linki 3, örn. https://..." />
+              <input name="photo_url_1" placeholder="Fotoğraf linki 1, örn. https://..." />
+              <input name="photo_url_2" placeholder="Fotoğraf linki 2, örn. https://..." />
+              <input name="photo_url_3" placeholder="Fotoğraf linki 3, örn. https://..." />
             </div>
-          </div>
-          <div className="menu-form">
-            <h3>Sertifika bilgisi</h3>
+          </details>
+          <details className="optional-section">
+            <summary>
+              <span>Sertifika bilgisi</span>
+              <small>Opsiyonel</small>
+            </summary>
             <p className="muted">Opsiyonel. PDF veya belge linki varsa ekleyin; yoksa bu bölümü tamamen boş bırakabilirsiniz.</p>
             <div className="form-grid">
               <input name="certificate_body" placeholder="Sertifika kurumu, örn. HMC Europe (opsiyonel)" />
@@ -380,7 +395,7 @@ export default async function OwnerPage({
               <input name="certificate_valid_from" type="date" aria-label="Geçerlilik başlangıcı" />
               <input name="certificate_valid_until" type="date" aria-label="Geçerlilik bitişi" />
             </div>
-          </div>
+          </details>
           <div className="checks">
             <label><input name="alcohol_free" type="checkbox" /> Alkolsüz</label>
             <label><input name="prayer_room" type="checkbox" /> Mescid var</label>
