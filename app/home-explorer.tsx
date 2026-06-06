@@ -206,12 +206,12 @@ export function HomeExplorer({
           </div>
           <div className="stats">
             <div className="stat"><strong>{filteredRestaurants.length}</strong><span>sonuç</span></div>
-            <div className="stat"><strong>{stats.restaurants}</strong><span>{source === "supabase" ? "canlı restoran" : "başlangıç kaydı"}</span></div>
+            <div className="stat"><strong>{stats.restaurants}</strong><span>{source === "supabase" ? "yayındaki mekan" : "örnek kayıt"}</span></div>
             <div className="stat"><strong>{stats.cities}</strong><span>şehir</span></div>
           </div>
         </div>
         <div className="panel">
-          <h2>Canlı MVP durumu</h2>
+          <h2>İşletmeler için hızlı yayın süreci</h2>
           <p className="muted">
             {notice}
           </p>
@@ -276,7 +276,7 @@ export function HomeExplorer({
           <span className="pill">Veritabanı hazır</span>
           <h2>Henüz yayınlanmış restoran yok.</h2>
           <p className="muted">
-            Admin onaylı restoranlar eklendiğinde burada gerçek canlı veriler görünecek.
+            Onaylanan restoranlar eklendiğinde burada güvenilir mekanlar listelenecek.
           </p>
           <a className="button primary" href="/owner">İlk restoran başvurusunu oluştur</a>
         </section>

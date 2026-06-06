@@ -66,7 +66,7 @@ function demoHomeData(): HomeData {
       plans: 4
     },
     source: "demo",
-    notice: "Supabase ortam değişkenleri bulunamadığı için demo veri gösteriliyor."
+    notice: "Restoran başvuruları alınmaya hazırlanıyor. İlk kayıtlar onaylandığında liste güncellenecek."
   };
 }
 
@@ -96,12 +96,12 @@ export async function getHomeData(): Promise<HomeData> {
       countriesResult.error?.message ??
       citiesResult.error?.message ??
       restaurantsResult.error?.message ??
-      "Supabase verisi okunamadı.";
+      "Canlı restoran verisi şu anda okunamadı.";
     const fallback = demoHomeData();
     return {
       ...fallback,
       source: "error",
-      notice: `Supabase bağlantısı kuruldu ama veri okunamadı: ${message}`
+      notice: `Restoran verisi geçici olarak okunamadı: ${message}`
     };
   }
 
@@ -166,6 +166,6 @@ export async function getHomeData(): Promise<HomeData> {
       plans: 4
     },
     source: "supabase",
-    notice: "Supabase bağlantısı aktif. Yayındaki restoranlar veritabanından okunuyor."
+    notice: "Yayındaki restoranlar onaylı kayıtlardan okunuyor. İşletmeler başvuru gönderip menü, fotoğraf ve sertifika bilgilerini ekleyebilir."
   };
 }

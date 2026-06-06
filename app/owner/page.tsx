@@ -227,7 +227,7 @@ export default async function OwnerPage({
         <span className="pill">İşletme Paneli</span>
         <h1>Restoranını ekle, menünü ve sertifikanı yönet.</h1>
         <p className="muted">
-          Başvurular Supabase'e pending olarak kaydedilir; admin onayından sonra yayına çıkar.
+          Başvurular kontrol kuyruğuna alınır; onaydan sonra kullanıcıların görebileceği şekilde yayına çıkar.
         </p>
       </section>
 
@@ -279,7 +279,7 @@ export default async function OwnerPage({
             <span className="pill">Başvuru alındı</span>
             <h3>Restoranın onay kuyruğuna eklendi.</h3>
             <p className="muted">
-              Bilgiler admin kontrolünden sonra yayına alınır. Sertifika, menü ve adres bilgileri eksikse admin yayın metnini düzeltebilir.
+              Bilgiler kontrol edildikten sonra yayına alınır. Sertifika, menü ve adres bilgileri eksikse yayın metni tamamlanabilir.
             </p>
             <div className="status-steps">
               <div>
