@@ -13,6 +13,11 @@ type CityOption = {
   countryFlag: string;
 };
 
+type CityGroup = {
+  label: string;
+  cities: CityOption[];
+};
+
 function cleanText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -186,12 +191,31 @@ async function getCities() {
   }));
 }
 
+function groupCitiesByCountry(cities: CityOption[]): CityGroup[] {
+  const groups = new Map<string, CityGroup>();
+
+  for (const city of cities) {
+    const label = `${city.countryFlag} ${city.countryName}`;
+    const group = groups.get(label) ?? { label, cities: [] };
+    group.cities.push(city);
+    groups.set(label, group);
+  }
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      cities: group.cities.sort((a, b) => a.name.localeCompare(b.name, "tr"))
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, "tr"));
+}
+
 export default async function OwnerPage({
   searchParams
 }: {
   searchParams?: { submitted?: string; error?: string; plan?: string };
 }) {
   const cities = await getCities();
+  const cityGroups = groupCitiesByCountry(cities);
   const submitted = searchParams?.submitted === "1";
   const selectedPlan = plans.some((plan) => plan.id === searchParams?.plan)
     ? searchParams?.plan
@@ -287,10 +311,14 @@ export default async function OwnerPage({
             <input name="opening_hours" placeholder="Çalışma saatleri, örn. Her gün 11:00-22:00" />
             <select name="city_id" required>
               <option value="">Ülke / şehir seç (zorunlu)</option>
-              {cities.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.countryFlag} {city.countryName} / {city.name}
-                </option>
+              {cityGroups.map((group) => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.cities.map((city) => (
+                    <option key={city.id} value={city.id}>
+                      {city.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             <input name="address" placeholder="Tam adres (zorunlu)" required />
