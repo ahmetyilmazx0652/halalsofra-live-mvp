@@ -1044,7 +1044,7 @@ input[type="checkbox"] {
     display: grid;
   }
 
-    .topbar {
+  .topbar {
   height: auto;
   min-height: 64px;
   padding: 10px 16px;
