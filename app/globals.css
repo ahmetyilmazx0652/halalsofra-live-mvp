@@ -1045,26 +1045,26 @@ input[type="checkbox"] {
   }
 
     .topbar {
-    height: auto;
-    min-height: 64px;
-    padding: 10px 16px;
-    gap: 10px;
-    overflow-x: auto;
-  }
+  height: auto;
+  min-height: 64px;
+  padding: 10px 16px;
+  gap: 10px;
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
 
-  .brand {
-    flex-shrink: 0;
-  }
+.nav {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
 
-  .nav {
-    flex-shrink: 0;
-    gap: 8px;
-  }
-
-  .nav a,
-  .button {
-    padding: 9px 11px;
-    font-size: 13px;
-    white-space: nowrap;
+.nav a,
+.button {
+  padding: 9px 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
   }
 }
