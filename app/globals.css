@@ -1044,7 +1044,27 @@ input[type="checkbox"] {
     display: grid;
   }
 
-  .topbar {
-    padding: 0 16px;
+    .topbar {
+    height: auto;
+    min-height: 64px;
+    padding: 10px 16px;
+    gap: 10px;
+    overflow-x: auto;
+  }
+
+  .brand {
+    flex-shrink: 0;
+  }
+
+  .nav {
+    flex-shrink: 0;
+    gap: 8px;
+  }
+
+  .nav a,
+  .button {
+    padding: 9px 11px;
+    font-size: 13px;
+    white-space: nowrap;
   }
 }
