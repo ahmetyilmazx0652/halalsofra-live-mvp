@@ -157,12 +157,12 @@ export function HomeExplorer({
     <main className="page">
       <section className="hero">
         <div className="panel">
-          <span className="pill">Avrupa Helal Restoran Rehberi</span>
-          <h1>Ülke seç, şehir seç, güvenilir helal mekan bul.</h1>
-          <p>
-            HalalSofra; restoran, kafe, fırın, market ve kasapları sertifika,
-            menü, fiyat ve konum bilgileriyle tek yerde toplar.
-          </p>
+          <span className="pill">HalalSofra Beta</span>
+<h1>Avrupa'daki helal restoranları keşfet.</h1>
+<p>
+  Yakınındaki doğrulanmış helal restoranları, kafeleri ve fırınları bul.
+  Yeni şehirler ve restoranlar düzenli olarak ekleniyor.
+</p>
           <div className="filters">
             <select
               aria-label="Ülke"
