@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </a>
             <nav className="nav">
               <a href="/">Restoranlar</a>
-              <a className="button primary" href="/owner">Restoranımı Ekle</a>
+              <a className="button primary" href="/owner">Restoran Ekle</a>
             </nav>
           </header>
           {children}
