@@ -1,12 +1,12 @@
 :root {
-  --green: #1a6b4a;
-  --green-dark: #0e3d2a;
-  --green-soft: #e8f5ee;
-  --gold: #c49a3c;
-  --cream: #faf7f2;
-  --ink: #1c1c1e;
-  --muted: #6b7280;
-  --border: rgba(26, 107, 74, 0.14);
+  --green: #234B3A;
+  --green-dark: #163126;
+  --green-soft: #EAF3ED;
+  --gold: #D4A85A;
+  --cream: #FCFAF6;
+  --ink: #171717;
+  --muted: #6F746F;
+  --border: rgba(35, 75, 58, 0.16);
 }
 
 * {
