@@ -285,17 +285,12 @@ export function HomeExplorer({
               {restaurant.rating ? <><strong>★ {restaurant.rating}</strong> · </> : null}
               {restaurant.cuisine} · {restaurant.price}
             </p>
-            <div className="card-signals" aria-label={`${restaurant.name} kayıt sinyalleri`}>
-              <span>{restaurant.hasCertificate ? "Sertifika var" : "Sertifika bekleniyor"}</span>
-              <span>{restaurant.menuItemCount > 0 ? `${restaurant.menuItemCount} menü ürünü` : "Menü bekleniyor"}</span>
-              <span>{restaurant.reviewCount > 0 ? `${restaurant.reviewCount} yorum` : "Yorum bekleniyor"}</span>
-              <span>{restaurant.hasPreciseLocation ? "Konum net" : "Adresle yönlendirme"}</span>
+            <div className="card-signals" aria-label={`${restaurant.name} öne çıkan bilgiler`}>
+  {restaurant.hasCertificate ? <span>Sertifikalı</span> : null}
+  {restaurant.alcoholFree ? <span>Alkolsüz</span> : null}
+  {restaurant.familyFriendly ? <span>Aile dostu</span> : null}
             </div>
-            <div className="feature-row">
-              {restaurant.alcoholFree ? <span className="pill">Alkolsüz</span> : null}
-              {restaurant.prayerRoom ? <span className="pill">Mescid</span> : null}
-              {restaurant.familyFriendly ? <span className="pill">Aile dostu</span> : null}
-            </div>
+        
           </a>
         ))}
       </section>
