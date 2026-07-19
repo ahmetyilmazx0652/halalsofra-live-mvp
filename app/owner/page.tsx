@@ -227,7 +227,7 @@ export default async function OwnerPage({
         <span className="pill">İşletme Paneli</span>
         <h1>Restoranını ekle, menünü ve sertifikanı yönet.</h1>
         <p className="muted">
-          Başvurular kontrol kuyruğuna alınır; onaydan sonra kullanıcıların görebileceği şekilde yayına çıkar.
+          Önce temel bilgileri gönderin. Başvuru kontrol edildikten sonra yayına alınır; menü, fotoğraf ve sertifika bilgileri sonra tamamlanabilir.
         </p>
       </section>
 
@@ -252,23 +252,23 @@ export default async function OwnerPage({
       <section className="panel" id="restaurant-application" style={{ marginTop: 16 }}>
         <h2>Restoran Başvurusu</h2>
         <p className="muted">
-          Zorunlu alanlar: restoran adı, ülke/şehir ve tam adres. Menü, sertifika, telefon ve diğer bilgiler opsiyoneldir.
+          Restoran adı, ülke/şehir ve tam adres yeterli. Diğer alanlar görünürlüğü artırır ama başvuru için zorunlu değildir.
         </p>
         <div className="application-guide" aria-label="Başvuru hazırlık rehberi">
           <article>
             <span className="pill">Zorunlu</span>
-            <h3>Yayına hazırlık için temel bilgiler</h3>
-            <p>Restoran adı, şehir ve tam adres olmadan başvuru kaydedilmez.</p>
+            <h3>3 bilgiyle başla</h3>
+            <p>Restoran adı, ülke/şehir ve tam adres başvuruyu almak için yeterlidir.</p>
           </article>
           <article>
             <span className="pill">Önerilen</span>
-            <h3>Daha güvenilir görünürlük</h3>
-            <p>Telefon, çalışma saati, menü, sertifika ve Google Place ID kullanıcı güvenini artırır.</p>
+            <h3>Güven sinyallerini ekle</h3>
+            <p>Telefon, çalışma saati, menü, sertifika ve fotoğraf kullanıcı kararını kolaylaştırır.</p>
           </article>
           <article>
             <span className="pill">Sonradan</span>
-            <h3>Eksikler admin panelinde tamamlanabilir</h3>
-            <p>Fotoğraf, sertifika linki ve açıklama daha sonra düzenlenebilir.</p>
+            <h3>Eksikler sonra tamamlanır</h3>
+            <p>Adres, açıklama, sertifika ve konum bilgileri admin kontrolünde düzeltilebilir.</p>
           </article>
         </div>
         {searchParams?.error ? (
@@ -305,7 +305,7 @@ export default async function OwnerPage({
           <div className="required-summary">
             <span className="pill">Sadece 3 zorunlu alan</span>
             <strong>Restoran adı, ülke/şehir ve tam adres.</strong>
-            <p className="muted">Diğer alanlar isteğe bağlıdır; admin panelinde daha sonra tamamlanabilir.</p>
+            <p className="muted">Diğer alanlar isteğe bağlıdır. Ne kadar çok bilgi girilirse kayıt o kadar güvenilir görünür.</p>
           </div>
           <h3>Temel bilgiler</h3>
           <div className="form-grid">
@@ -328,7 +328,7 @@ export default async function OwnerPage({
               ))}
             </select>
             <input name="address" placeholder="Tam adres (zorunlu)" required />
-            <input name="google_place_id" placeholder="Google Place ID (opsiyonel)" />
+            <input name="google_place_id" placeholder="Google Place ID (opsiyonel, bilmiyorsanız boş bırakın)" />
             <select name="cuisine" defaultValue="turkish">
               <option value="turkish">Türk</option>
               <option value="arabic">Arap</option>

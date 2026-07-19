@@ -61,12 +61,12 @@ function demoHomeData(): HomeData {
       hasPreciseLocation: false
     })),
     stats: {
-      restaurants: 384,
+      restaurants: demoRestaurants.length,
       cities: cityCount,
       plans: 4
     },
     source: "demo",
-    notice: "Restoran başvuruları alınmaya hazırlanıyor. İlk kayıtlar onaylandığında liste güncellenecek."
+    notice: "Canlı restoran verisi geçici olarak okunamadığında örnek kayıtlar gösterilir. Yayındaki gerçek kayıtlar Supabase bağlantısı aktifken listelenir."
   };
 }
 
@@ -166,6 +166,6 @@ export async function getHomeData(): Promise<HomeData> {
       plans: 4
     },
     source: "supabase",
-    notice: "Yayındaki restoranlar onaylı kayıtlardan okunuyor. İşletmeler başvuru gönderip menü, fotoğraf ve sertifika bilgilerini ekleyebilir."
+    notice: "Yayındaki restoranlar admin onaylı kayıtlardan okunuyor. İşletmeler başvuru gönderip menü, fotoğraf ve sertifika bilgilerini ekleyebilir."
   };
 }

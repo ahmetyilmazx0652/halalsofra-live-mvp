@@ -157,7 +157,7 @@ export function HomeExplorer({
     <main className="page">
       <section className="hero">
         <div className="panel">
-          <span className="pill">HalalSofra Beta</span>
+          <span className="pill">Avrupa Helal Restoran Rehberi</span>
 <h1>Avrupa'daki helal restoranları keşfet.</h1>
 <p>
   Yakınındaki doğrulanmış helal restoranları, kafeleri ve fırınları bul.
@@ -208,7 +208,7 @@ export function HomeExplorer({
           </div>
           <div className="stats">
             <div className="stat"><strong>{filteredRestaurants.length}</strong><span>sonuç</span></div>
-            <div className="stat"><strong>{stats.restaurants}</strong><span>{source === "supabase" ? "yayındaki mekan" : "örnek kayıt"}</span></div>
+            <div className="stat"><strong>{stats.restaurants}</strong><span>{source === "supabase" ? "yayındaki mekan" : "gösterilen örnek"}</span></div>
             <div className="stat"><strong>{stats.cities}</strong><span>şehir</span></div>
           </div>
         </div>
@@ -233,17 +233,17 @@ export function HomeExplorer({
         <article>
           <span className="pill">Kapsam</span>
           <strong>{countryCount} ülke ve {stats.cities} şehir</strong>
-          <p className="muted">Rehber ülke ve şehir bazında büyüyecek şekilde kuruldu.</p>
+          <p className="muted">Rehber ülke ve şehir bazında ölçeklenecek şekilde hazırlandı.</p>
         </article>
         <article>
           <span className="pill">Doğrulama</span>
           <strong>Admin onaylı yayın</strong>
-          <p className="muted">Yeni işletmeler önce kontrol kuyruğuna düşer, sonra yayına alınır.</p>
+          <p className="muted">Yeni işletmeler önce kontrol edilir, sonra kullanıcılara açılır.</p>
         </article>
         <article>
           <span className="pill">İşletme</span>
           <strong>Menü, fotoğraf ve sertifika</strong>
-          <p className="muted">İşletmeler kayıtlarını zamanla tamamlayabilir.</p>
+          <p className="muted">İşletmeler temel kayıtla başlayıp bilgilerini zamanla tamamlayabilir.</p>
         </article>
       </section>
 
