@@ -772,6 +772,23 @@ export default async function AdminPage({
         </a>
       </section>
 
+      <section className="admin-command" aria-label="Yayın hazırlık kontrolü">
+        <div>
+          <span className="pill">Yayın Hazırlığı</span>
+          <h2>Bugün önce bunları tamamla.</h2>
+          <p className="muted">
+            Canlıya çıkış için en kritik sıra: başvuruları kontrol et, konumu netleştir, menü ve sertifika eksiklerini kapat.
+          </p>
+        </div>
+        <div className="command-actions">
+          <a className="button primary" href="#pending-restaurants">Başvuruları İncele</a>
+          <a className="button" href="/admin?quality=missing-location#published-restaurants">Konum Eksikleri</a>
+          <a className="button" href="/admin?quality=missing-menu#published-restaurants">Menü Eksikleri</a>
+          <a className="button" href="/admin?quality=missing-certificate#published-restaurants">Sertifika Eksikleri</a>
+          <a className="button" href="#pending-reviews">Yorum Kuyruğu</a>
+        </div>
+      </section>
+
       <section className="grid" id="pending-restaurants">
         {pendingRestaurants.map((item) => (
           <article className="card admin-card" key={item.id}>

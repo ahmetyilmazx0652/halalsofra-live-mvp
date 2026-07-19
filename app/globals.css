@@ -312,6 +312,34 @@ input[type="checkbox"] {
   margin-top: 8px;
 }
 
+.admin-command {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin-top: 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.admin-command h2 {
+  margin: 10px 0 6px;
+}
+
+.admin-command p {
+  margin: 0;
+}
+
+.command-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  max-width: 520px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1013,6 +1041,7 @@ input[type="checkbox"] {
   .grid,
   .launch-strip,
   .admin-metrics,
+  .admin-command,
   .trust-strip,
   .plans,
   .form-grid,
@@ -1067,4 +1096,3 @@ input[type="checkbox"] {
   white-space: nowrap;
 }
   }
-
