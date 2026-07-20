@@ -270,7 +270,12 @@ async function getAdminMetrics(): Promise<AdminMetrics> {
     countRows("restaurants", (request) => request.eq("status", "suspended")),
     countRows("reviews", (request) => request.eq("status", "pending")),
     countRows("reviews", (request) => request.eq("status", "approved")),
-    countRows("restaurants", (request) => request.eq("status", "published").or("lat.is.null,lng.is.null"))
+    countRows("restaurants", (request) =>
+      request
+        .eq("status", "published")
+        .is("google_place_id", null)
+        .or("lat.is.null,lng.is.null")
+    )
   ]);
 
   return {
