@@ -292,6 +292,16 @@ function cleanText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function slugify(value: string) {
+  return value
+    .toLocaleLowerCase("tr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 function cleanCoordinate(value: FormDataEntryValue | null) {
   const text = cleanText(value).replace(",", ".");
   if (!text) return null;
@@ -402,6 +412,56 @@ async function adminLogout() {
 
   cookies().delete(ADMIN_COOKIE);
   redirect("/admin");
+}
+
+async function createPublishedRestaurant(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
+
+  const name = cleanText(formData.get("name"));
+  const cityId = cleanText(formData.get("city_id"));
+  const address = cleanText(formData.get("address"));
+  const halalGrade = cleanText(formData.get("halal_grade")) || "B";
+  const priceLevel = Number(cleanText(formData.get("price_level"))) || 2;
+
+  if (!name || !cityId || !address) {
+    redirect("/admin?error=quick-add-missing");
+  }
+  if (!["A", "B", "C"].includes(halalGrade)) {
+    redirect("/admin?error=grade");
+  }
+
+  const result = await supabase.rpc("admin_create_published_restaurant", {
+    next_name: name,
+    next_slug: `${slugify(name)}-${Date.now()}`,
+    next_city_id: cityId,
+    next_address: address,
+    next_phone: cleanText(formData.get("phone")),
+    next_email: cleanText(formData.get("email")),
+    next_opening_hours: cleanText(formData.get("opening_hours")),
+    next_description: cleanText(formData.get("description")),
+    next_cuisine: cleanText(formData.get("cuisine")) || "turkish",
+    next_halal_grade: halalGrade,
+    next_price_level: Math.min(Math.max(priceLevel, 1), 4),
+    next_google_place_id: cleanText(formData.get("google_place_id")),
+    next_alcohol_free: formData.get("alcohol_free") === "on",
+    next_prayer_room: formData.get("prayer_room") === "on",
+    next_family_friendly: formData.get("family_friendly") === "on",
+    next_is_featured: formData.get("is_featured") === "on"
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?created=1#published-restaurants");
 }
 
 async function updatePendingRestaurant(formData: FormData) {
@@ -663,7 +723,7 @@ async function respondToReview(formData: FormData) {
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; error?: string; q?: string; quality?: string };
+  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; created?: string; error?: string; q?: string; quality?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -723,6 +783,9 @@ export default async function AdminPage({
         </form>
         {searchParams?.loggedIn ? (
           <div className="notice success">Admin girişi tamamlandı.</div>
+        ) : null}
+        {searchParams?.created ? (
+          <div className="notice success">Restoran hızlı ekleme ile yayına alındı.</div>
         ) : null}
         {searchParams?.reviewed ? (
           <div className="notice success">İşlem tamamlandı: {searchParams.reviewed}</div>
@@ -792,6 +855,60 @@ export default async function AdminPage({
           <a className="button" href="/admin?quality=missing-certificate#published-restaurants">Sertifika Eksikleri</a>
           <a className="button" href="#pending-reviews">Yorum Kuyruğu</a>
         </div>
+      </section>
+
+      <section className="panel" id="quick-add" style={{ marginTop: 16 }}>
+        <span className="pill">Hızlı Yayın</span>
+        <h2>Gerçek restoranı doğrudan yayına ekle.</h2>
+        <p className="muted">
+          Toplu veri girerken en hızlı yol bu formdur. Menü, fotoğraf ve sertifika sonradan canlı kayıt düzenleme alanından tamamlanabilir.
+        </p>
+        <form action={createPublishedRestaurant} className="owner-form" style={{ marginTop: 16 }}>
+          <div className="form-grid">
+            <input name="name" placeholder="Restoran adı" required />
+            <select name="city_id" required>
+              <option value="">Ülke / şehir seç</option>
+              {adminCities.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.countryFlag} {city.countryName} / {city.name}
+                </option>
+              ))}
+            </select>
+            <input name="address" placeholder="Tam adres" required />
+            <input name="phone" placeholder="Telefon" />
+            <input name="email" type="email" placeholder="E-posta" />
+            <input name="opening_hours" placeholder="Çalışma saatleri" />
+            <input name="google_place_id" placeholder="Google Place ID" />
+            <select name="cuisine" defaultValue="turkish">
+              <option value="turkish">Türk</option>
+              <option value="arabic">Arap</option>
+              <option value="burger">Burger</option>
+              <option value="bakery">Fırın</option>
+              <option value="market">Market</option>
+              <option value="butcher">Kasap</option>
+              <option value="other">Diğer</option>
+            </select>
+            <select name="halal_grade" defaultValue="B">
+              <option value="A">Grade A</option>
+              <option value="B">Grade B</option>
+              <option value="C">Grade C</option>
+            </select>
+            <select name="price_level" defaultValue="2">
+              <option value="1">€</option>
+              <option value="2">€€</option>
+              <option value="3">€€€</option>
+              <option value="4">€€€€</option>
+            </select>
+          </div>
+          <textarea name="description" placeholder="Kısa açıklama" />
+          <div className="checks">
+            <label><input name="is_featured" type="checkbox" /> Öne çıkar</label>
+            <label><input name="alcohol_free" type="checkbox" /> Alkolsüz</label>
+            <label><input name="prayer_room" type="checkbox" /> Mescid var</label>
+            <label><input name="family_friendly" type="checkbox" /> Aile dostu</label>
+          </div>
+          <button className="button primary" type="submit">Restoranı Yayına Ekle</button>
+        </form>
       </section>
 
       <section className="grid" id="pending-restaurants">
