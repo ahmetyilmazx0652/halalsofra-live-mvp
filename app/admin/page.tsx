@@ -1097,7 +1097,7 @@ export default async function AdminPage({
         <span className="pill">Toplu Yayın</span>
         <h2>Restoran listesini yapıştır, tek seferde ekle.</h2>
         <p className="muted">
-          Her satıra bir restoran yaz. Şehir eşleşirse kayıtlar direkt canlıya alınır; menü, fotoğraf, sertifika ve çalışma saatleri sonradan tamamlanabilir.
+          Aşağıdaki büyük kutuya gerçek listeyi yapıştır. Şehir eşleşirse kayıtlar direkt canlıya alınır; menü, fotoğraf, sertifika ve çalışma saatleri sonradan tamamlanabilir.
         </p>
         <div className="required-summary" style={{ marginTop: 14 }}>
           <strong>Format</strong>
@@ -1109,12 +1109,11 @@ export default async function AdminPage({
             name="bulk_restaurants"
             placeholder={"Lale Pide | Belçika/Bruksel | Chau. de Haecht 129, 1030 Schaerbeek | +32 2 217 47 82 | B | turkish | | Alkolsüz pide ve kebap\nRestoran 2 | Hollanda/Amsterdam | Adres | Telefon | A | turkish | Place ID | Not"}
             rows={8}
-            required
           />
           <div className="checks">
             <label><input name="bulk_alcohol_free" type="checkbox" /> Bu listedeki restoranları varsayılan alkolsüz işaretle</label>
           </div>
-          <button className="button primary" type="submit">Listeyi Toplu Yayına Al</button>
+          <button className="button primary" type="submit">Kutudaki Listeyi Toplu Yayına Al</button>
         </form>
       </section>
 
