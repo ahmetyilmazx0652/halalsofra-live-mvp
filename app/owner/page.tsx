@@ -32,6 +32,21 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+function normalizeRestaurantKey(value: string) {
+  return value
+    .toLocaleLowerCase("tr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/ş/g, "s")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
 function cleanPrice(value: FormDataEntryValue | null) {
   const text = cleanText(value).replace(",", ".");
   const price = Number(text);
@@ -65,17 +80,21 @@ async function submitRestaurant(formData: FormData) {
 
   const duplicateResult = await supabase
     .from("restaurants")
-    .select("id")
+    .select("id,name")
     .eq("city_id", cityResult.data.id)
-    .ilike("name", name)
     .in("status", ["pending", "published"])
-    .limit(1);
+    .limit(200);
 
   if (duplicateResult.error) {
     redirect(`/owner?error=${encodeURIComponent(duplicateResult.error.message)}`);
   }
 
-  if ((duplicateResult.data ?? []).length > 0) {
+  const nextRestaurantKey = normalizeRestaurantKey(name);
+  const hasDuplicate = (duplicateResult.data ?? []).some(
+    (restaurant) => normalizeRestaurantKey(restaurant.name ?? "") === nextRestaurantKey
+  );
+
+  if (hasDuplicate) {
     redirect("/owner?duplicate=1#restaurant-application");
   }
 
@@ -105,6 +124,10 @@ async function submitRestaurant(formData: FormData) {
   }).select("id").single();
 
   if (insertResult.error) {
+    if (insertResult.error.message.includes("DUPLICATE_RESTAURANT")) {
+      redirect("/owner?duplicate=1#restaurant-application");
+    }
+
     redirect(`/owner?error=${encodeURIComponent(insertResult.error.message)}`);
   }
 

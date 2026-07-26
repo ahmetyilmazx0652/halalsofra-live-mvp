@@ -1,3 +1,72 @@
+create or replace function public.normalize_restaurant_key(input_text text)
+returns text
+language sql
+immutable
+as $$
+  select trim(regexp_replace(
+    replace(
+      replace(
+        replace(
+          replace(
+            replace(
+              replace(
+                replace(
+                  replace(lower(coalesce(input_text, '')), 'i̇', 'i'),
+                  'ı', 'i'
+                ),
+                'ş', 's'
+              ),
+              'ğ', 'g'
+            ),
+            'ü', 'u'
+          ),
+          'ö', 'o'
+        ),
+        'ç', 'c'
+      ),
+      'â', 'a'
+    ),
+    '[^a-z0-9]+',
+    ' ',
+    'g'
+  ));
+$$;
+
+create or replace function public.prevent_duplicate_restaurant_submission()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+declare
+  duplicate_restaurant_id uuid;
+begin
+  if new.status in ('pending', 'published') then
+    select r.id
+    into duplicate_restaurant_id
+    from public.restaurants r
+    where r.city_id = new.city_id
+      and r.status in ('pending', 'published')
+      and public.normalize_restaurant_key(r.name) = public.normalize_restaurant_key(new.name)
+      and r.id <> new.id
+    order by case when r.status = 'published' then 0 else 1 end, r.updated_at desc
+    limit 1;
+
+    if duplicate_restaurant_id is not null then
+      raise exception 'DUPLICATE_RESTAURANT:%', duplicate_restaurant_id
+        using errcode = '23505';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists prevent_duplicate_restaurant_submission on public.restaurants;
+create trigger prevent_duplicate_restaurant_submission
+before insert on public.restaurants
+for each row
+execute function public.prevent_duplicate_restaurant_submission();
+
 create or replace function public.admin_create_published_restaurant(
   next_name text,
   next_slug text,
@@ -51,7 +120,7 @@ begin
   into existing_restaurant_id
   from public.restaurants r
   where r.city_id = next_city_id
-    and lower(trim(r.name)) = lower(trim(next_name))
+    and public.normalize_restaurant_key(r.name) = public.normalize_restaurant_key(next_name)
     and r.status in ('pending', 'published')
   order by case when r.status = 'published' then 0 else 1 end, r.updated_at desc
   limit 1;
