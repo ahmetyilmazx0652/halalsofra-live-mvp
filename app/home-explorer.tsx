@@ -263,24 +263,30 @@ export function HomeExplorer({
           <a className={`card restaurant-card ${restaurant.featured ? "featured" : ""}`} href={`/restaurants/${restaurant.slug}`} key={restaurant.id}>
             {restaurant.photoUrl ? (
               <img className="restaurant-card-photo" src={restaurant.photoUrl} alt={`${restaurant.name} fotoğrafı`} loading="lazy" />
-            ) : null}
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span className="pill">Grade {restaurant.grade}</span>
-              {restaurant.featured ? <span className="pill">Öne çıkan</span> : null}
+            ) : (
+              <div className="restaurant-card-cover" aria-hidden="true">
+                <span>{restaurant.country.slice(0, 2).toLocaleUpperCase("tr")}</span>
+              </div>
+            )}
+            <div className="restaurant-card-head">
+              <span className={`grade-badge grade-${restaurant.grade.toLocaleLowerCase("tr")}`}>Grade {restaurant.grade}</span>
+              {restaurant.featured ? <span className="feature-badge">Öne çıkan</span> : null}
             </div>
             <h3>{restaurant.name}</h3>
-            <p className="muted">{restaurant.country} · {restaurant.city}</p>
-            <p>{restaurant.address}</p>
-            <p>
-              {restaurant.rating ? <><strong>★ {restaurant.rating}</strong> · </> : null}
-              {restaurant.cuisine} · {restaurant.price}
-            </p>
-            <div className="card-signals" aria-label={`${restaurant.name} öne çıkan bilgiler`}>
-  {restaurant.hasCertificate ? <span>Sertifikalı</span> : null}
-  {restaurant.alcoholFree ? <span>Alkolsüz</span> : null}
-  {restaurant.familyFriendly ? <span>Aile dostu</span> : null}
+            <p className="restaurant-location">{restaurant.country} · {restaurant.city}</p>
+            <p className="restaurant-address">{restaurant.address}</p>
+            <div className="restaurant-meta">
+              {restaurant.rating ? <span>★ {restaurant.rating}</span> : null}
+              <span>{restaurant.cuisine}</span>
+              <span>{restaurant.price}</span>
             </div>
-        
+            <div className="card-signals" aria-label={`${restaurant.name} öne çıkan bilgiler`}>
+              {restaurant.hasCertificate ? <span>Sertifikalı</span> : null}
+              {restaurant.alcoholFree ? <span>Alkolsüz</span> : null}
+              {restaurant.prayerRoom ? <span>Mescid</span> : null}
+              {restaurant.familyFriendly ? <span>Aile dostu</span> : null}
+            </div>
+            <span className="card-cta">Detayı incele</span>
           </a>
         ))}
       </section>
