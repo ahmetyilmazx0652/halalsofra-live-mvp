@@ -315,16 +315,53 @@ function slugify(value: string) {
 }
 
 function normalizeLookup(value: string) {
-  return value
+  const normalized = value
     .toLocaleLowerCase("tr")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/ı/g, "i")
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  const aliases: Record<string, string> = {
+    belgium: "belcika",
+    belgique: "belcika",
+    belgie: "belcika",
+    belcika: "belcika",
+    netherlands: "hollanda",
+    nederland: "hollanda",
+    nederlands: "hollanda",
+    holland: "hollanda",
+    deutschland: "almanya",
+    germany: "almanya",
+    allemagne: "almanya",
+    france: "fransa",
+    austria: "avusturya",
+    osterreich: "avusturya",
+    brussels: "bruksel",
+    bruxelles: "bruksel",
+    brussel: "bruksel",
+    antwerpen: "antwerp",
+    anvers: "antwerp",
+    cologne: "koln",
+    koeln: "koln",
+    munich: "munih",
+    muenchen: "munchen"
+  };
+
+  return aliases[normalized] ?? normalized;
+}
+
+function splitBulkRestaurantLine(line: string) {
+  if (line.includes("|")) return line.split("|");
+  if (line.includes("\t")) return line.split("\t");
+  if (line.includes(";")) return line.split(";");
+  return line.split("|");
 }
 
 function parseBulkRestaurantLine(line: string): BulkRestaurantRow | null {
-  const parts = line.split("|").map((part) => part.trim());
+  const parts = splitBulkRestaurantLine(line).map((part) => part.trim());
   if (parts.length < 3 || parts.every((part) => part.length === 0)) return null;
 
   const [name, location, address, phone = "", rawGrade = "B", cuisine = "turkish", googlePlaceId = "", description = ""] = parts;
@@ -565,7 +602,8 @@ async function bulkCreatePublishedRestaurants(formData: FormData) {
   for (const [index, row] of rows.entries()) {
     const cityKey = normalizeLookup(row.cityName);
     const cityId = row.countryName
-      ? cityByCountryAndName.get(`${normalizeLookup(row.countryName)}/${cityKey}`)
+      ? cityByCountryAndName.get(`${normalizeLookup(row.countryName)}/${cityKey}`) ??
+        (ambiguousCities.has(cityKey) ? null : cityByName.get(cityKey))
       : ambiguousCities.has(cityKey)
         ? null
         : cityByName.get(cityKey);
