@@ -846,6 +846,16 @@ input[type="checkbox"] {
   color: var(--muted);
 }
 
+.info-list .hours-list {
+  display: grid;
+  gap: 6px;
+  line-height: 1.45;
+}
+
+.info-list .hours-list span {
+  display: block;
+}
+
 .info-list a {
   color: var(--green-dark);
   font-weight: 800;

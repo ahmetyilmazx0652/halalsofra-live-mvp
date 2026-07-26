@@ -67,6 +67,20 @@ function formatReviewDate(value: string | null) {
   }).format(new Date(value));
 }
 
+const openingHourDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+
+function formatOpeningHours(value: string | null) {
+  if (!value) return [];
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  const dayPattern = new RegExp(`(?=${openingHourDays.join("|")})`, "g");
+
+  return normalized
+    .split(dayPattern)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 function cleanText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -285,6 +299,7 @@ export default async function RestaurantDetailPage({
   const cityHref = country?.name && city?.name
     ? `/?country=${encodeURIComponent(country.name)}&city=${encodeURIComponent(city.name)}`
     : countryHref;
+  const openingHourLines = formatOpeningHours(restaurant.opening_hours);
 
   return (
     <main className="page">
@@ -347,7 +362,16 @@ export default async function RestaurantDetailPage({
           <h2>Restoran Bilgileri</h2>
           <div className="info-list">
             <p><strong>Adres</strong><span>{restaurant.address}</span></p>
-            {restaurant.opening_hours ? <p><strong>Çalışma saatleri</strong><span>{restaurant.opening_hours}</span></p> : null}
+            {openingHourLines.length > 0 ? (
+              <p>
+                <strong>Çalışma saatleri</strong>
+                <span className="hours-list">
+                  {openingHourLines.map((line) => (
+                    <span key={line}>{line}</span>
+                  ))}
+                </span>
+              </p>
+            ) : null}
             <p><strong>Mutfak</strong><span>{restaurant.cuisine}</span></p>
             <p><strong>Fiyat</strong><span>{priceLabel(restaurant.price_level)}</span></p>
             {restaurant.phone ? <p><strong>Telefon</strong><span>{restaurant.phone}</span></p> : null}

@@ -105,13 +105,21 @@ export function HomeExplorer({
     return countries.find((country) => country.name === selectedCountry)?.cities ?? [];
   }, [countries, selectedCountry]);
   const visibleCityCount = cityOptions.length;
+  const activeLocationLabel =
+    selectedCity !== ALL_CITIES
+      ? selectedCity
+      : selectedCountry !== ALL_COUNTRIES
+        ? selectedCountry
+        : `${visibleCityCount} şehir taranıyor`;
 
   const filteredRestaurants = useMemo(() => {
     const q = normalize(query);
+    const selectedCountryName = normalize(selectedCountry);
+    const selectedCityName = normalize(selectedCity);
 
     const matches = restaurants.filter((restaurant) => {
-      const countryMatch = selectedCountry === ALL_COUNTRIES || restaurant.country === selectedCountry;
-      const cityMatch = selectedCity === ALL_CITIES || restaurant.city === selectedCity;
+      const countryMatch = selectedCountry === ALL_COUNTRIES || normalize(restaurant.country) === selectedCountryName;
+      const cityMatch = selectedCity === ALL_CITIES || normalize(restaurant.city) === selectedCityName;
       const haystack = normalize(
         [
           restaurant.name,
@@ -251,7 +259,7 @@ export function HomeExplorer({
         <div>
           <span className="pill">Sonuçlar</span>
           <strong>{filteredRestaurants.length} mekan listeleniyor</strong>
-          <span className="muted">{selectedCountry === ALL_COUNTRIES ? `${visibleCityCount} şehir taranıyor` : selectedCountry}</span>
+          <span className="muted">{activeLocationLabel}</span>
         </div>
         <label>
           <span>Sırala</span>
