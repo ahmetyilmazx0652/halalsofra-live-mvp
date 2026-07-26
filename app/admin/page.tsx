@@ -72,6 +72,18 @@ type AdminMetrics = {
   missingCoordinates: number;
 };
 
+type BulkRestaurantRow = {
+  name: string;
+  countryName: string;
+  cityName: string;
+  address: string;
+  phone: string;
+  grade: string;
+  cuisine: string;
+  googlePlaceId: string;
+  description: string;
+};
+
 function mapRestaurant(item: any): AdminRestaurant {
   return {
     id: item.id,
@@ -302,6 +314,40 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+function normalizeLookup(value: string) {
+  return value
+    .toLocaleLowerCase("tr")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseBulkRestaurantLine(line: string): BulkRestaurantRow | null {
+  const parts = line.split("|").map((part) => part.trim());
+  if (parts.length < 3 || parts.every((part) => part.length === 0)) return null;
+
+  const [name, location, address, phone = "", rawGrade = "B", cuisine = "turkish", googlePlaceId = "", description = ""] = parts;
+  if (!name || !location || !address) return null;
+
+  const locationParts = location.split("/").map((part) => part.trim()).filter(Boolean);
+  const countryName = locationParts.length > 1 ? locationParts[0] : "";
+  const cityName = locationParts.length > 1 ? locationParts.slice(1).join("/") : locationParts[0] ?? "";
+  const grade = rawGrade.toUpperCase();
+
+  return {
+    name,
+    countryName,
+    cityName,
+    address,
+    phone,
+    grade: ["A", "B", "C"].includes(grade) ? grade : "B",
+    cuisine: cuisine || "turkish",
+    googlePlaceId,
+    description
+  };
+}
+
 function cleanCoordinate(value: FormDataEntryValue | null) {
   const text = cleanText(value).replace(",", ".");
   if (!text) return null;
@@ -462,6 +508,101 @@ async function createPublishedRestaurant(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/admin?created=1#published-restaurants");
+}
+
+async function bulkCreatePublishedRestaurants(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config");
+  }
+
+  const rawRows = cleanText(formData.get("bulk_restaurants"));
+  const rows = rawRows
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .map(parseBulkRestaurantLine)
+    .filter(Boolean) as BulkRestaurantRow[];
+
+  if (rows.length === 0) {
+    redirect("/admin?error=bulk-empty#bulk-add");
+  }
+  if (rows.length > 80) {
+    redirect("/admin?error=bulk-too-many#bulk-add");
+  }
+
+  const cityResult = await supabase
+    .from("cities")
+    .select("id,name,countries(name)")
+    .order("name");
+
+  if (cityResult.error) {
+    redirect(`/admin?error=${encodeURIComponent(cityResult.error.message)}#bulk-add`);
+  }
+
+  const cityByCountryAndName = new Map<string, string>();
+  const cityByName = new Map<string, string>();
+  const ambiguousCities = new Set<string>();
+
+  for (const city of cityResult.data ?? []) {
+    const country = city.countries?.[0] ?? city.countries;
+    const cityKey = normalizeLookup(city.name);
+    const countryCityKey = `${normalizeLookup(country?.name ?? "")}/${cityKey}`;
+    cityByCountryAndName.set(countryCityKey, city.id);
+
+    if (cityByName.has(cityKey)) {
+      ambiguousCities.add(cityKey);
+    } else {
+      cityByName.set(cityKey, city.id);
+    }
+  }
+
+  let createdCount = 0;
+
+  for (const [index, row] of rows.entries()) {
+    const cityKey = normalizeLookup(row.cityName);
+    const cityId = row.countryName
+      ? cityByCountryAndName.get(`${normalizeLookup(row.countryName)}/${cityKey}`)
+      : ambiguousCities.has(cityKey)
+        ? null
+        : cityByName.get(cityKey);
+
+    if (!cityId) {
+      redirect(`/admin?error=${encodeURIComponent(`${index + 1}. satırda şehir bulunamadı: ${row.countryName ? `${row.countryName} / ` : ""}${row.cityName}`)}#bulk-add`);
+    }
+
+    const result = await supabase.rpc("admin_create_published_restaurant", {
+      next_name: row.name,
+      next_slug: `${slugify(row.name)}-${Date.now()}-${index + 1}`,
+      next_city_id: cityId,
+      next_address: row.address,
+      next_phone: row.phone,
+      next_email: "",
+      next_opening_hours: "",
+      next_description: row.description,
+      next_cuisine: row.cuisine || "turkish",
+      next_halal_grade: row.grade,
+      next_price_level: 2,
+      next_google_place_id: row.googlePlaceId,
+      next_alcohol_free: formData.get("bulk_alcohol_free") === "on",
+      next_prayer_room: false,
+      next_family_friendly: false,
+      next_is_featured: false
+    });
+
+    if (result.error) {
+      redirect(`/admin?error=${encodeURIComponent(`${index + 1}. satır kaydedilemedi: ${result.error.message}`)}#bulk-add`);
+    }
+
+    createdCount += 1;
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect(`/admin?bulkCreated=${createdCount}#published-restaurants`);
 }
 
 async function updatePendingRestaurant(formData: FormData) {
@@ -723,7 +864,7 @@ async function respondToReview(formData: FormData) {
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; created?: string; error?: string; q?: string; quality?: string };
+  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; created?: string; bulkCreated?: string; error?: string; q?: string; quality?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -786,6 +927,9 @@ export default async function AdminPage({
         ) : null}
         {searchParams?.created ? (
           <div className="notice success">Restoran hızlı ekleme ile yayına alındı.</div>
+        ) : null}
+        {searchParams?.bulkCreated ? (
+          <div className="notice success">{searchParams.bulkCreated} restoran toplu ekleme ile yayına alındı.</div>
         ) : null}
         {searchParams?.reviewed ? (
           <div className="notice success">İşlem tamamlandı: {searchParams.reviewed}</div>
@@ -908,6 +1052,31 @@ export default async function AdminPage({
             <label><input name="family_friendly" type="checkbox" /> Aile dostu</label>
           </div>
           <button className="button primary" type="submit">Restoranı Yayına Ekle</button>
+        </form>
+      </section>
+
+      <section className="panel" id="bulk-add" style={{ marginTop: 16 }}>
+        <span className="pill">Toplu Yayın</span>
+        <h2>Restoran listesini yapıştır, tek seferde ekle.</h2>
+        <p className="muted">
+          Her satıra bir restoran yaz. Şehir eşleşirse kayıtlar direkt canlıya alınır; menü, fotoğraf, sertifika ve çalışma saatleri sonradan tamamlanabilir.
+        </p>
+        <div className="required-summary" style={{ marginTop: 14 }}>
+          <strong>Format</strong>
+          <p>Ad | Ülke/Şehir | Adres | Telefon | Grade | Mutfak | Google Place ID | Kısa açıklama</p>
+          <p className="muted">Örnek: Lale Pide | Belçika/Bruksel | Chau. de Haecht 129, 1030 Schaerbeek | +32 2 217 47 82 | B | turkish | | Alkolsüz pide ve kebap</p>
+        </div>
+        <form action={bulkCreatePublishedRestaurants} className="owner-form" style={{ marginTop: 16 }}>
+          <textarea
+            name="bulk_restaurants"
+            placeholder={"Lale Pide | Belçika/Bruksel | Chau. de Haecht 129, 1030 Schaerbeek | +32 2 217 47 82 | B | turkish | | Alkolsüz pide ve kebap\nRestoran 2 | Hollanda/Amsterdam | Adres | Telefon | A | turkish | Place ID | Not"}
+            rows={8}
+            required
+          />
+          <div className="checks">
+            <label><input name="bulk_alcohol_free" type="checkbox" /> Bu listedeki restoranları varsayılan alkolsüz işaretle</label>
+          </div>
+          <button className="button primary" type="submit">Listeyi Toplu Yayına Al</button>
         </form>
       </section>
 
