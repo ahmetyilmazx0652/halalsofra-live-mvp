@@ -237,24 +237,6 @@ export function HomeExplorer({
         </div>
       </section>
 
-      <section className="launch-strip" aria-label="HalalSofra yayın kapsamı">
-        <article>
-          <span className="pill">Kapsam</span>
-          <strong>{countryCount} ülke ve {stats.cities} şehir</strong>
-          <p className="muted">Rehber ülke ve şehir bazında ölçeklenecek şekilde hazırlandı.</p>
-        </article>
-        <article>
-          <span className="pill">Doğrulama</span>
-          <strong>Admin onaylı yayın</strong>
-          <p className="muted">Yeni işletmeler önce kontrol edilir, sonra kullanıcılara açılır.</p>
-        </article>
-        <article>
-          <span className="pill">İşletme</span>
-          <strong>Menü, fotoğraf ve sertifika</strong>
-          <p className="muted">İşletmeler temel kayıtla başlayıp bilgilerini zamanla tamamlayabilir.</p>
-        </article>
-      </section>
-
       <section className="results-toolbar" id="results" aria-label="Sonuç kontrolü">
         <div>
           <span className="pill">Sonuçlar</span>
