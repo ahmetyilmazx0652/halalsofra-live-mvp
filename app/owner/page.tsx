@@ -63,6 +63,22 @@ async function submitRestaurant(formData: FormData) {
     redirect("/owner?error=city");
   }
 
+  const duplicateResult = await supabase
+    .from("restaurants")
+    .select("id")
+    .eq("city_id", cityResult.data.id)
+    .ilike("name", name)
+    .in("status", ["pending", "published"])
+    .limit(1);
+
+  if (duplicateResult.error) {
+    redirect(`/owner?error=${encodeURIComponent(duplicateResult.error.message)}`);
+  }
+
+  if ((duplicateResult.data ?? []).length > 0) {
+    redirect("/owner?duplicate=1#restaurant-application");
+  }
+
   const slug = `${slugify(name)}-${Date.now()}`;
   const priceLevel = Number(cleanText(formData.get("price_level"))) || 2;
   const insertResult = await supabase.from("restaurants").insert({
@@ -212,7 +228,7 @@ function groupCitiesByCountry(cities: CityOption[]): CityGroup[] {
 export default async function OwnerPage({
   searchParams
 }: {
-  searchParams?: { submitted?: string; error?: string; plan?: string };
+  searchParams?: { submitted?: string; error?: string; plan?: string; duplicate?: string };
 }) {
   const cities = await getCities();
   const cityGroups = groupCitiesByCountry(cities);
@@ -273,6 +289,11 @@ export default async function OwnerPage({
         </div>
         {searchParams?.error ? (
           <div className="notice error">Başvuru kaydedilemedi: {decodeURIComponent(searchParams.error)}</div>
+        ) : null}
+        {searchParams?.duplicate === "1" ? (
+          <div className="notice error">
+            Bu şehirde aynı isimle bir restoran kaydı zaten var. Bilgilerde hata varsa bize güncelleme talebi gönderebilirsiniz.
+          </div>
         ) : null}
         {submitted ? (
           <div className="submission-status">

@@ -24,6 +24,7 @@ as $$
 declare
   next_country_id uuid;
   created_restaurant_id uuid;
+  existing_restaurant_id uuid;
 begin
   if nullif(trim(next_name), '') is null then
     raise exception 'Restaurant name is required';
@@ -44,6 +45,40 @@ begin
 
   if next_country_id is null then
     raise exception 'Invalid city id: %', next_city_id;
+  end if;
+
+  select r.id
+  into existing_restaurant_id
+  from public.restaurants r
+  where r.city_id = next_city_id
+    and lower(trim(r.name)) = lower(trim(next_name))
+    and r.status in ('pending', 'published')
+  order by case when r.status = 'published' then 0 else 1 end, r.updated_at desc
+  limit 1;
+
+  if existing_restaurant_id is not null then
+    update public.restaurants
+    set country_id = next_country_id,
+        city_id = next_city_id,
+        name = trim(next_name),
+        cuisine = coalesce(nullif(trim(next_cuisine), ''), cuisine, 'turkish'),
+        description = coalesce(nullif(trim(next_description), ''), description),
+        address = trim(next_address),
+        phone = coalesce(nullif(trim(next_phone), ''), phone),
+        email = coalesce(nullif(trim(next_email), ''), email),
+        opening_hours = coalesce(nullif(trim(next_opening_hours), ''), opening_hours),
+        google_place_id = coalesce(nullif(trim(next_google_place_id), ''), google_place_id),
+        price_level = least(greatest(coalesce(next_price_level, price_level, 2), 1), 4),
+        halal_grade = next_halal_grade::halal_grade,
+        status = 'published',
+        is_featured = coalesce(next_is_featured, is_featured, false),
+        alcohol_free = coalesce(next_alcohol_free, alcohol_free, false),
+        prayer_room = coalesce(next_prayer_room, prayer_room, false),
+        family_friendly = coalesce(next_family_friendly, family_friendly, false),
+        updated_at = now()
+    where id = existing_restaurant_id;
+
+    return existing_restaurant_id;
   end if;
 
   insert into public.restaurants (

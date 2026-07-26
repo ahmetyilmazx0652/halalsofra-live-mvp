@@ -597,7 +597,7 @@ async function bulkCreatePublishedRestaurants(formData: FormData) {
     }
   }
 
-  let createdCount = 0;
+  let savedCount = 0;
 
   for (const [index, row] of rows.entries()) {
     const cityKey = normalizeLookup(row.cityName);
@@ -635,12 +635,12 @@ async function bulkCreatePublishedRestaurants(formData: FormData) {
       redirect(`/admin?error=${encodeURIComponent(`${index + 1}. satır kaydedilemedi: ${result.error.message}`)}#bulk-add`);
     }
 
-    createdCount += 1;
+    savedCount += 1;
   }
 
   revalidatePath("/");
   revalidatePath("/admin");
-  redirect(`/admin?bulkCreated=${createdCount}#published-restaurants`);
+  redirect(`/admin?bulkCreated=${savedCount}#published-restaurants`);
 }
 
 async function updatePendingRestaurant(formData: FormData) {
@@ -964,10 +964,10 @@ export default async function AdminPage({
           <div className="notice success">Admin girişi tamamlandı.</div>
         ) : null}
         {searchParams?.created ? (
-          <div className="notice success">Restoran hızlı ekleme ile yayına alındı.</div>
+          <div className="notice success">Restoran yayına eklendi veya mevcut kayıt güncellendi.</div>
         ) : null}
         {searchParams?.bulkCreated ? (
-          <div className="notice success">{searchParams.bulkCreated} restoran toplu ekleme ile yayına alındı.</div>
+          <div className="notice success">{searchParams.bulkCreated} satır işlendi; yeni kayıtlar eklendi, aynı kayıtlar güncellendi.</div>
         ) : null}
         {searchParams?.reviewed ? (
           <div className="notice success">İşlem tamamlandı: {searchParams.reviewed}</div>
