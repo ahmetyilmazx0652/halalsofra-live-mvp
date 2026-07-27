@@ -61,6 +61,18 @@ function completenessScore(restaurant: HomeRestaurant) {
   ].filter(Boolean).length;
 }
 
+function gradeDescription(grade: HomeRestaurant["grade"]) {
+  if (grade === "A") {
+    return "Grade A: Helal beyanı güçlü, alkol hassasiyeti ve doğrulama sinyalleri yüksek.";
+  }
+
+  if (grade === "B") {
+    return "Grade B: Helal ürün bilgisi var; bazı detaylar işletme beyanı veya ek kontrol gerektirebilir.";
+  }
+
+  return "Grade C: Sadece belirli ürünler veya sınırlı bilgi için helal uygunluğu belirtilmiş olabilir.";
+}
+
 export function HomeExplorer({
   countries,
   restaurants,
@@ -286,7 +298,14 @@ export function HomeExplorer({
               <img className="restaurant-card-photo" src={restaurant.photoUrl} alt={`${restaurant.name} fotoğrafı`} loading="lazy" />
             ) : null}
             <div className="restaurant-card-head">
-              <span className={`grade-badge grade-${restaurant.grade.toLocaleLowerCase("tr")}`}>Grade {restaurant.grade}</span>
+              <span
+                className={`grade-badge grade-${restaurant.grade.toLocaleLowerCase("tr")}`}
+                data-tooltip={gradeDescription(restaurant.grade)}
+                title={gradeDescription(restaurant.grade)}
+                tabIndex={0}
+              >
+                Grade {restaurant.grade}
+              </span>
               {restaurant.featured ? <span className="feature-badge">Öne çıkan</span> : null}
             </div>
             <h3>{restaurant.name}</h3>

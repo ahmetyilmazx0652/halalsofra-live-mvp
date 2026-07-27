@@ -476,6 +476,54 @@ input[type="checkbox"] {
 .grade-badge {
   background: var(--green-soft);
   color: var(--green-dark);
+  position: relative;
+  cursor: help;
+  outline: none;
+}
+
+.grade-badge::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  z-index: 5;
+  width: min(260px, 70vw);
+  padding: 10px 12px;
+  border: 1px solid rgba(18, 57, 47, 0.16);
+  border-radius: 10px;
+  background: #173d33;
+  color: #fffdf8;
+  box-shadow: 0 14px 34px rgba(18, 57, 47, 0.2);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  white-space: normal;
+}
+
+.grade-badge::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  bottom: calc(100% + 5px);
+  z-index: 6;
+  width: 10px;
+  height: 10px;
+  background: #173d33;
+  transform: rotate(45deg);
+  opacity: 0;
+  transition: opacity 0.14s ease;
+}
+
+.grade-badge:hover::after,
+.grade-badge:focus-visible::after,
+.grade-badge:hover::before,
+.grade-badge:focus-visible::before {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .grade-a {
