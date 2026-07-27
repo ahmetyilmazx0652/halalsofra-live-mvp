@@ -1,21 +1,111 @@
 export const demoCountries = [
   {
+    id: "all-other",
+    name: "Diğer",
+    flag: "🌍",
+    cities: ["Bilinmiyor"]
+  },
+  {
     id: "de",
     name: "Almanya",
     flag: "🇩🇪",
     cities: ["Berlin", "Köln", "Frankfurt", "Hamburg", "Düsseldorf"]
   },
   {
+    id: "al",
+    name: "Arnavutluk",
+    flag: "🇦🇱",
+    cities: ["Tiran", "İşkodra"]
+  },
+  {
+    id: "at",
+    name: "Avusturya",
+    flag: "🇦🇹",
+    cities: ["Viyana", "Salzburg"]
+  },
+  {
+    id: "be",
+    name: "Belçika",
+    flag: "🇧🇪",
+    cities: ["Bruksel", "Antwerp"]
+  },
+  {
+    id: "ba",
+    name: "Bosna-Hersek",
+    flag: "🇧🇦",
+    cities: ["Saraybosna", "Mostar"]
+  },
+  {
     id: "fr",
     name: "Fransa",
     flag: "🇫🇷",
-    cities: ["Paris"]
+    cities: ["Paris", "Lyon", "Marsilya"]
   },
   {
     id: "nl",
     name: "Hollanda",
     flag: "🇳🇱",
     cities: ["Amsterdam", "Rotterdam"]
+  },
+  {
+    id: "hr",
+    name: "Hırvatistan",
+    flag: "🇭🇷",
+    cities: ["Zagreb", "Split"]
+  },
+  {
+    id: "hu",
+    name: "Macaristan",
+    flag: "🇭🇺",
+    cities: ["Budapeşte"]
+  },
+  {
+    id: "pl",
+    name: "Polonya",
+    flag: "🇵🇱",
+    cities: ["Varşova", "Kraków"]
+  },
+  {
+    id: "pt",
+    name: "Portekiz",
+    flag: "🇵🇹",
+    cities: ["Lizbon", "Porto"]
+  },
+  {
+    id: "si",
+    name: "Slovenya",
+    flag: "🇸🇮",
+    cities: ["Ljubljana"]
+  },
+  {
+    id: "gr",
+    name: "Yunanistan",
+    flag: "🇬🇷",
+    cities: ["Atina", "Selanik"]
+  },
+  {
+    id: "cz",
+    name: "Çekya",
+    flag: "🇨🇿",
+    cities: ["Prag"]
+  },
+  {
+    id: "es",
+    name: "İspanya",
+    flag: "🇪🇸",
+    cities: ["Madrid", "Barcelona"]
+  },
+  {
+    id: "ch",
+    name: "İsviçre",
+    flag: "🇨🇭",
+    cities: ["Zürih", "Cenevre"]
+  },
+  {
+    id: "it",
+    name: "İtalya",
+    flag: "🇮🇹",
+    cities: ["Roma", "Milano"]
   }
 ];
 

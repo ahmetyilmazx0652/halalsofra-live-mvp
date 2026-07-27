@@ -6,7 +6,6 @@ insert into public.countries (name, code, flag) values
   ('Bosna-Hersek', 'BA', '🇧🇦'),
   ('Diğer', 'XX', '🌍'),
   ('Fransa', 'FR', '🇫🇷'),
-  ('Birleşik Krallık', 'GB', '🇬🇧'),
   ('Hollanda', 'NL', '🇳🇱'),
   ('Hırvatistan', 'HR', '🇭🇷'),
   ('Macaristan', 'HU', '🇭🇺'),
@@ -16,10 +15,11 @@ insert into public.countries (name, code, flag) values
   ('Yunanistan', 'GR', '🇬🇷'),
   ('Çekya', 'CZ', '🇨🇿'),
   ('İspanya', 'ES', '🇪🇸'),
-  ('İsveç', 'SE', '🇸🇪'),
   ('İsviçre', 'CH', '🇨🇭'),
   ('İtalya', 'IT', '🇮🇹')
-on conflict (code) do nothing;
+on conflict (code) do update
+set name = excluded.name,
+    flag = excluded.flag;
 
 insert into public.cities (country_id, name, lat, lng)
 select c.id, v.name, v.lat, v.lng
@@ -42,7 +42,6 @@ join (values
   ('FR','Paris',48.8566,2.3522),
   ('FR','Lyon',45.7640,4.8357),
   ('FR','Marsilya',43.2965,5.3698),
-  ('GB','London',51.5072,-0.1276),
   ('NL','Amsterdam',52.3676,4.9041),
   ('NL','Rotterdam',51.9244,4.4777),
   ('HR','Zagreb',45.8150,15.9819),
@@ -58,10 +57,11 @@ join (values
   ('CZ','Prag',50.0755,14.4378),
   ('ES','Madrid',40.4168,-3.7038),
   ('ES','Barcelona',41.3874,2.1686),
-  ('SE','Stockholm',59.3293,18.0686),
   ('CH','Zürih',47.3769,8.5417),
   ('CH','Cenevre',46.2044,6.1432),
   ('IT','Roma',41.9028,12.4964),
   ('IT','Milano',45.4642,9.1900)
 ) as v(code, name, lat, lng) on c.code = v.code
-on conflict (country_id, name) do nothing;
+on conflict (country_id, name) do update
+set lat = excluded.lat,
+    lng = excluded.lng;
