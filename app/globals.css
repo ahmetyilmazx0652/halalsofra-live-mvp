@@ -935,12 +935,24 @@ input[type="checkbox"] {
 
 .info-list .hours-list {
   display: grid;
-  gap: 6px;
+  gap: 7px;
   line-height: 1.45;
 }
 
-.info-list .hours-list span {
-  display: block;
+.info-list .hours-row {
+  display: grid;
+  grid-template-columns: minmax(108px, max-content) 1fr;
+  column-gap: 14px;
+  align-items: baseline;
+}
+
+.info-list .hours-row span:first-child {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.info-list .hours-row span:last-child {
+  color: var(--muted);
 }
 
 .info-list a {

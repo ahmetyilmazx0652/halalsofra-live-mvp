@@ -78,7 +78,14 @@ function formatOpeningHours(value: string | null) {
   return normalized
     .split(dayPattern)
     .map((line) => line.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((line) => {
+      const day = openingHourDays.find((name) => line.startsWith(name));
+      return {
+        day: day ?? "",
+        hours: day ? line.slice(day.length).trim() : line
+      };
+    });
 }
 
 function cleanText(value: FormDataEntryValue | null) {
@@ -367,7 +374,10 @@ export default async function RestaurantDetailPage({
                 <strong>Çalışma saatleri</strong>
                 <span className="hours-list">
                   {openingHourLines.map((line) => (
-                    <span key={line}>{line}</span>
+                    <span className="hours-row" key={`${line.day}-${line.hours}`}>
+                      <span>{line.day}</span>
+                      <span>{line.hours}</span>
+                    </span>
                   ))}
                 </span>
               </p>
