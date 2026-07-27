@@ -51,6 +51,12 @@ type AdminCityOption = {
   countryFlag: string;
 };
 
+type AdminCountryOption = {
+  id: string;
+  name: string;
+  flag: string;
+};
+
 type AdminReview = {
   id: string;
   authorName: string | null;
@@ -169,6 +175,23 @@ async function getAdminCities() {
     name: city.name,
     countryName: city.countries?.[0]?.name ?? city.countries?.name ?? "Bilinmiyor",
     countryFlag: city.countries?.[0]?.flag ?? city.countries?.flag ?? "🌍"
+  }));
+}
+
+async function getAdminCountries() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("countries")
+    .select("id,name,flag")
+    .order("name");
+
+  if (result.error) return [];
+
+  return (result.data ?? []).map((country: any): AdminCountryOption => ({
+    id: country.id,
+    name: country.name,
+    flag: country.flag ?? "🌍"
   }));
 }
 
@@ -553,6 +576,40 @@ async function createPublishedRestaurant(formData: FormData) {
   redirect("/admin?created=1#published-restaurants");
 }
 
+async function createCity(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseConfig || !supabase) {
+    redirect("/admin?error=config#city-add");
+  }
+
+  const countryId = cleanText(formData.get("country_id"));
+  const cityName = cleanText(formData.get("city_name"));
+  const lat = cleanCoordinate(formData.get("lat"));
+  const lng = cleanCoordinate(formData.get("lng"));
+
+  if (!countryId || !cityName) {
+    redirect("/admin?error=city-missing#city-add");
+  }
+
+  const result = await supabase.rpc("admin_create_city", {
+    target_country_id: countryId,
+    next_name: cityName,
+    next_lat: lat,
+    next_lng: lng
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}#city-add`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?cityCreated=1#city-add");
+}
+
 async function bulkCreatePublishedRestaurants(formData: FormData) {
   "use server";
 
@@ -908,7 +965,7 @@ async function respondToReview(formData: FormData) {
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; created?: string; bulkCreated?: string; error?: string; q?: string; quality?: string };
+  searchParams?: { reviewed?: string; reviewModerated?: string; reviewResponse?: string; saved?: string; publishedSaved?: string; archived?: string; restored?: string; loggedIn?: string; created?: string; cityCreated?: string; bulkCreated?: string; error?: string; q?: string; quality?: string };
 }) {
   const unlocked = isAdminUnlocked();
 
@@ -945,13 +1002,14 @@ export default async function AdminPage({
 
   const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
   const publishedQuality = cleanPublishedQualityFilter(searchParams?.quality);
-  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants, adminCities, adminMetrics] = await Promise.all([
+  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants, adminCities, adminCountries, adminMetrics] = await Promise.all([
     getPendingRestaurants(),
     getPendingReviews(),
     getApprovedReviews(),
     getPublishedRestaurants(publishedQuery, publishedQuality),
     getArchivedRestaurants(),
     getAdminCities(),
+    getAdminCountries(),
     getAdminMetrics()
   ]);
 
@@ -971,6 +1029,9 @@ export default async function AdminPage({
         ) : null}
         {searchParams?.created ? (
           <div className="notice success">Restoran yayına eklendi veya mevcut kayıt güncellendi.</div>
+        ) : null}
+        {searchParams?.cityCreated ? (
+          <div className="notice success">Şehir eklendi veya mevcut şehir güncellendi.</div>
         ) : null}
         {searchParams?.bulkCreated ? (
           <div className="notice success">{searchParams.bulkCreated} satır işlendi; yeni kayıtlar eklendi, aynı kayıtlar güncellendi.</div>
@@ -1026,6 +1087,30 @@ export default async function AdminPage({
           <strong>{adminMetrics.archivedRestaurants}</strong>
           <span>arşivlenen kayıt</span>
         </a>
+      </section>
+
+      <section className="panel" id="city-add" style={{ marginTop: 16 }}>
+        <span className="pill">Şehir Yönetimi</span>
+        <h2>Listede olmayan şehri ekle.</h2>
+        <p className="muted">
+          Restoran eklemeden önce şehir yoksa buradan ekle. Aynı ülke içinde aynı şehir varsa tekrar kayıt açılmaz, varsa koordinatı güncellenir.
+        </p>
+        <form action={createCity} className="owner-form" style={{ marginTop: 16 }}>
+          <div className="form-grid">
+            <select name="country_id" required>
+              <option value="">Ülke seç</option>
+              {adminCountries.map((country) => (
+                <option key={country.id} value={country.id}>
+                  {country.flag} {country.name}
+                </option>
+              ))}
+            </select>
+            <input name="city_name" placeholder="Şehir adı, örn. Utrecht" required />
+            <input name="lat" inputMode="decimal" placeholder="Enlem opsiyonel" />
+            <input name="lng" inputMode="decimal" placeholder="Boylam opsiyonel" />
+          </div>
+          <button className="button primary" type="submit">Şehri Ekle</button>
+        </form>
       </section>
 
       <section className="admin-command" aria-label="Yayın hazırlık kontrolü">
