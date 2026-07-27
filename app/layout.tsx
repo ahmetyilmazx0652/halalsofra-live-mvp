@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { siteUrl } from "@/lib/site";
 
@@ -25,6 +25,12 @@ export const metadata: Metadata = {
     index: true,
     follow: true
   }
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
