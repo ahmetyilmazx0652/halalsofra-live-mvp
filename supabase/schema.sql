@@ -37,7 +37,7 @@ create table public.restaurants (
   city_id uuid references public.cities(id),
   name text not null,
   slug text not null unique,
-  cuisine text not null default 'turkish',
+  cuisine text not null default 'restaurant',
   description text,
   address text not null,
   phone text,

@@ -1,6 +1,7 @@
 import { revalidatePath, unstable_noStore as noStore } from "next/cache";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { cuisineLabel } from "@/lib/cuisine";
 import { absoluteUrl } from "@/lib/site";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 import { ShareActions } from "./share-actions";
@@ -282,6 +283,7 @@ export default async function RestaurantDetailPage({
     ? reviews.reduce((total: number, review: any) => total + (review.rating ?? 0), 0) / reviews.length
     : null;
   const detailUrl = absoluteUrl(`/restaurants/${restaurant.slug}`);
+  const restaurantCuisine = cuisineLabel(restaurant.cuisine);
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
@@ -290,7 +292,7 @@ export default async function RestaurantDetailPage({
     address: restaurant.address,
     telephone: restaurant.phone || undefined,
     email: restaurant.email || undefined,
-    servesCuisine: restaurant.cuisine,
+    servesCuisine: restaurantCuisine,
     url: detailUrl,
     image: photos.map((photo) => photo.storage_path),
     aggregateRating: averageRating
@@ -389,7 +391,7 @@ export default async function RestaurantDetailPage({
                 </span>
               </p>
             ) : null}
-            <p><strong>Mutfak</strong><span>{restaurant.cuisine}</span></p>
+            <p><strong>Mutfak</strong><span>{restaurantCuisine}</span></p>
             {priceEstimate ? <p><strong>Kişi başı tahmini</strong><span>{priceEstimate}</span></p> : null}
             {restaurant.phone ? <p><strong>Telefon</strong><span>{restaurant.phone}</span></p> : null}
             {restaurant.email ? <p><strong>E-posta</strong><span>{restaurant.email}</span></p> : null}

@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cuisineLabel, cuisineOptions } from "@/lib/cuisine";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +98,7 @@ function mapRestaurant(item: any): AdminRestaurant {
     phone: item.phone,
     email: item.email,
     openingHours: item.opening_hours,
-    cuisine: item.cuisine,
+    cuisine: cuisineLabel(item.cuisine),
     description: item.description,
     halalGrade: item.halal_grade,
     subscriptionPlan: item.subscription_plan,
@@ -369,7 +370,7 @@ function parseBulkRestaurantLine(line: string): BulkRestaurantRow | null {
   const parts = splitBulkRestaurantLine(line).map((part) => part.trim());
   if (parts.length < 3 || parts.every((part) => part.length === 0)) return null;
 
-  const [name, location, address, phone = "", rawGrade = "B", cuisine = "turkish", googlePlaceId = "", description = ""] = parts;
+  const [name, location, address, phone = "", rawGrade = "B", cuisine = "restaurant", googlePlaceId = "", description = ""] = parts;
   if (!name || !location || !address) return null;
 
   const locationParts = location.split("/").map((part) => part.trim()).filter(Boolean);
@@ -384,7 +385,7 @@ function parseBulkRestaurantLine(line: string): BulkRestaurantRow | null {
     address,
     phone,
     grade: ["A", "B", "C"].includes(grade) ? grade : "B",
-    cuisine: cuisine || "turkish",
+    cuisine: cuisine || "restaurant",
     googlePlaceId,
     description
   };
@@ -533,7 +534,7 @@ async function createPublishedRestaurant(formData: FormData) {
     next_email: cleanText(formData.get("email")),
     next_opening_hours: cleanText(formData.get("opening_hours")),
     next_description: cleanText(formData.get("description")),
-    next_cuisine: cleanText(formData.get("cuisine")) || "turkish",
+    next_cuisine: cleanText(formData.get("cuisine")) || "restaurant",
     next_halal_grade: halalGrade,
     next_price_level: priceLevel,
     next_google_place_id: cleanText(formData.get("google_place_id")),
@@ -626,7 +627,7 @@ async function bulkCreatePublishedRestaurants(formData: FormData) {
       next_email: "",
       next_opening_hours: "",
       next_description: row.description,
-      next_cuisine: row.cuisine || "turkish",
+      next_cuisine: row.cuisine || "restaurant",
       next_halal_grade: row.grade,
       next_price_level: null,
       next_google_place_id: row.googlePlaceId,
@@ -1066,14 +1067,10 @@ export default async function AdminPage({
             <input name="email" type="email" placeholder="E-posta" />
             <input name="opening_hours" placeholder="Çalışma saatleri" />
             <input name="google_place_id" placeholder="Google Place ID" />
-            <select name="cuisine" defaultValue="turkish">
-              <option value="turkish">Türk</option>
-              <option value="arabic">Arap</option>
-              <option value="burger">Burger</option>
-              <option value="bakery">Fırın</option>
-              <option value="market">Market</option>
-              <option value="butcher">Kasap</option>
-              <option value="other">Diğer</option>
+            <select name="cuisine" defaultValue="restaurant">
+              {cuisineOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
             <select name="halal_grade" defaultValue="B">
               <option value="A">Grade A</option>
@@ -1108,12 +1105,12 @@ export default async function AdminPage({
         <div className="required-summary" style={{ marginTop: 14 }}>
           <strong>Format</strong>
           <p>Ad | Ülke/Şehir | Adres | Telefon | Grade | Mutfak | Google Place ID | Kısa açıklama</p>
-          <p className="muted">Örnek: Lale Pide | Belçika/Bruksel | Chau. de Haecht 129, 1030 Schaerbeek | +32 2 217 47 82 | B | turkish | | Alkolsüz pide ve kebap</p>
+          <p className="muted">Örnek: Lale Pide | Belçika/Bruksel | Chau. de Haecht 129, 1030 Schaerbeek | +32 2 217 47 82 | B | pide | | Alkolsüz pide ve kebap</p>
         </div>
         <form action={bulkCreatePublishedRestaurants} className="owner-form" style={{ marginTop: 16 }}>
           <textarea
             name="bulk_restaurants"
-            placeholder={"Lale Pide | Belçika/Bruksel | Chau. de Haecht 129, 1030 Schaerbeek | +32 2 217 47 82 | B | turkish | | Alkolsüz pide ve kebap\nRestoran 2 | Hollanda/Amsterdam | Adres | Telefon | A | turkish | Place ID | Not"}
+            placeholder={"Lale Pide | Belçika/Bruksel | Chau. de Haecht 129, 1030 Schaerbeek | +32 2 217 47 82 | B | pide | | Alkolsüz pide ve kebap\nPastane 2 | Hollanda/Amsterdam | Adres | Telefon | A | dessert | Place ID | Not"}
             rows={8}
           />
           <div className="checks">

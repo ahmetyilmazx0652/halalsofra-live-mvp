@@ -1,5 +1,6 @@
 import { plans } from "@/lib/plans";
 import { redirect } from "next/navigation";
+import { cuisineOptions } from "@/lib/cuisine";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -110,7 +111,7 @@ async function submitRestaurant(formData: FormData) {
     city_id: cityResult.data.id,
     name,
     slug,
-    cuisine: cleanText(formData.get("cuisine")) || "turkish",
+    cuisine: cleanText(formData.get("cuisine")) || "restaurant",
     description: cleanText(formData.get("description")),
     address,
     phone: cleanText(formData.get("phone")),
@@ -378,13 +379,10 @@ export default async function OwnerPage({
             </select>
             <input name="address" placeholder="Tam adres (zorunlu)" required />
             <input name="google_place_id" placeholder="Google Place ID (opsiyonel, bilmiyorsanız boş bırakın)" />
-            <select name="cuisine" defaultValue="turkish">
-              <option value="turkish">Türk</option>
-              <option value="arabic">Arap</option>
-              <option value="burger">Burger</option>
-              <option value="bakery">Fırın</option>
-              <option value="market">Market</option>
-              <option value="butcher">Kasap</option>
+            <select name="cuisine" defaultValue="restaurant">
+              {cuisineOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
             <select name="halal_grade" defaultValue="B">
               <option value="A">Grade A</option>

@@ -1,4 +1,5 @@
 import { demoCountries, demoRestaurants } from "@/lib/demo-data";
+import { cuisineLabel } from "@/lib/cuisine";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
 
 export type HomeCountry = {
@@ -148,7 +149,7 @@ export async function getHomeData(): Promise<HomeData> {
         .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]?.storage_path ?? null,
       country: countryNameById.get(restaurant.country_id) ?? "Bilinmiyor",
       city: cityNameById.get(restaurant.city_id) ?? "Bilinmiyor",
-      cuisine: restaurant.cuisine ?? "Restoran",
+      cuisine: cuisineLabel(restaurant.cuisine),
       grade: restaurant.halal_grade ?? "B",
       priceEstimate: priceEstimateLabel(restaurant.price_level),
       rating: null,
