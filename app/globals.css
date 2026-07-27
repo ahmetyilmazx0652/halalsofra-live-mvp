@@ -1279,6 +1279,22 @@ input[type="checkbox"] {
     grid-template-columns: 1fr;
   }
 
+  .filter-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-chips .chip {
+    flex: 0 0 auto;
+  }
+
   .restaurant-address {
     min-height: 0;
   }
