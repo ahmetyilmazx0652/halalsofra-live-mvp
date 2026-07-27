@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { HomeCountry, HomeRestaurant, HomeData } from "@/lib/home-data";
 
 type HomeExplorerProps = {
@@ -94,6 +94,11 @@ export function HomeExplorer({
   const [query, setQuery] = useState(initialQuery?.trim() ?? "");
   const [sortMode, setSortMode] = useState<SortMode>(isSortMode(initialSort) ? initialSort : "featured");
   const countryCount = countries.length;
+  const countryByName = useMemo(() => {
+    return new Map(countries.map((country) => [country.name, country]));
+  }, [countries]);
+  const selectedCountryInfo = selectedCountry === ALL_COUNTRIES ? null : countryByName.get(selectedCountry);
+  const countryFlag = (countryName: string) => countryByName.get(countryName)?.flag;
 
   const cityOptions = useMemo(() => {
     if (selectedCountry === ALL_COUNTRIES) {
@@ -104,12 +109,21 @@ export function HomeExplorer({
 
     return countries.find((country) => country.name === selectedCountry)?.cities ?? [];
   }, [countries, selectedCountry]);
+
+  useEffect(() => {
+    if (selectedCity !== ALL_CITIES && !cityOptions.includes(selectedCity)) {
+      setSelectedCity(ALL_CITIES);
+    }
+  }, [cityOptions, selectedCity]);
+
   const visibleCityCount = cityOptions.length;
   const activeLocationLabel =
     selectedCity !== ALL_CITIES
-      ? selectedCity
+      ? selectedCountryInfo
+        ? `${selectedCountryInfo.flag} ${selectedCountryInfo.name} / ${selectedCity}`
+        : selectedCity
       : selectedCountry !== ALL_COUNTRIES
-        ? selectedCountry
+        ? `${selectedCountryInfo?.flag ?? ""} ${selectedCountry} içinde ${visibleCityCount} şehir`
         : `${visibleCityCount} şehir taranıyor`;
 
   const filteredRestaurants = useMemo(() => {
@@ -188,9 +202,12 @@ export function HomeExplorer({
             <select
               aria-label="Şehir"
               value={selectedCity}
+              disabled={cityOptions.length === 0}
               onChange={(event) => setSelectedCity(event.target.value)}
             >
-              <option value={ALL_CITIES}>Tüm şehirler</option>
+              <option value={ALL_CITIES}>
+                {selectedCountryInfo ? `${selectedCountryInfo.name} şehirleri` : "Tüm şehirler"}
+              </option>
               {cityOptions.map((city) => (
                 <option key={city} value={city}>{city}</option>
               ))}
@@ -273,7 +290,10 @@ export function HomeExplorer({
               {restaurant.featured ? <span className="feature-badge">Öne çıkan</span> : null}
             </div>
             <h3>{restaurant.name}</h3>
-            <p className="restaurant-location">{restaurant.country} · {restaurant.city}</p>
+            <p className="restaurant-location">
+              {countryFlag(restaurant.country) ? `${countryFlag(restaurant.country)} ` : ""}
+              {restaurant.country} · {restaurant.city}
+            </p>
             <p className="restaurant-address">{restaurant.address}</p>
             <div className="restaurant-meta">
               {restaurant.rating ? <span>★ {restaurant.rating}</span> : null}
@@ -310,6 +330,8 @@ export function HomeExplorer({
             Başka bir şehir seçin, özellik filtresini değiştirin veya arama metnini kısaltın.
           </p>
           <button className="button" type="button" onClick={() => {
+            setSelectedCountry(ALL_COUNTRIES);
+            setSelectedCity(ALL_CITIES);
             setSelectedFeature("all");
             setQuery("");
           }}>
