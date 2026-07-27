@@ -1076,10 +1076,10 @@ export default async function AdminPage({
               <option value="C">Grade C</option>
             </select>
             <select name="price_level" defaultValue="2">
-              <option value="1">€</option>
-              <option value="2">€€</option>
-              <option value="3">€€€</option>
-              <option value="4">€€€€</option>
+              <option value="1">€ - Ekonomik</option>
+              <option value="2">€€ - Orta</option>
+              <option value="3">€€€ - Pahalı</option>
+              <option value="4">€€€€ - Premium</option>
             </select>
           </div>
           <textarea name="description" placeholder="Kısa açıklama" />
