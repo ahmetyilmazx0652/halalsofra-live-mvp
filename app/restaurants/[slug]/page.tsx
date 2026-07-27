@@ -73,14 +73,15 @@ function formatOpeningHours(value: string | null) {
   if (!value) return [];
   const normalized = value.replace(/\s+/g, " ").trim();
   if (!normalized) return [];
-  const dayPattern = new RegExp(`(?=${openingHourDays.join("|")})`, "g");
+  const orderedDays = [...openingHourDays].sort((a, b) => b.length - a.length);
+  const dayPattern = new RegExp(`(?=${orderedDays.join("|")})`, "g");
 
   return normalized
     .split(dayPattern)
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const day = openingHourDays.find((name) => line.startsWith(name));
+      const day = orderedDays.find((name) => line.startsWith(name));
       return {
         day: day ?? "",
         hours: day ? line.slice(day.length).trim() : line
