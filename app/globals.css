@@ -345,7 +345,23 @@ input[type="checkbox"] {
   flex-direction: column;
   min-height: 100%;
   overflow: hidden;
+  position: relative;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.restaurant-card.without-photo {
+  padding-top: 18px;
+  background:
+    linear-gradient(180deg, rgba(230, 242, 236, 0.6), rgba(255, 253, 248, 0) 88px),
+    var(--paper);
+}
+
+.restaurant-card.without-photo::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, var(--green), var(--gold), var(--coral));
 }
 
 .restaurant-card-photo {
@@ -355,31 +371,6 @@ input[type="checkbox"] {
   display: block;
   margin: -16px -16px 14px;
   background: var(--green-soft);
-}
-
-.restaurant-card-cover {
-  width: calc(100% + 32px);
-  min-height: 118px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
-  margin: -16px -16px 14px;
-  padding: 16px;
-  background:
-    radial-gradient(circle at 82% 20%, rgba(255, 255, 255, 0.46), transparent 28%),
-    linear-gradient(135deg, #fff1d4, #d7eadf 54%, #f3c4a9);
-}
-
-.restaurant-card-cover span {
-  display: inline-grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: rgba(255, 253, 248, 0.9);
-  color: var(--green-dark);
-  font-weight: 900;
-  box-shadow: 0 8px 22px rgba(18, 57, 47, 0.12);
 }
 
 .restaurant-card:hover {

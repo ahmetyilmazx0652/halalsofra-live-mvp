@@ -260,14 +260,14 @@ export function HomeExplorer({
 
       <section className="grid">
         {filteredRestaurants.map((restaurant) => (
-          <a className={`card restaurant-card ${restaurant.featured ? "featured" : ""}`} href={`/restaurants/${restaurant.slug}`} key={restaurant.id}>
+          <a
+            className={`card restaurant-card ${restaurant.photoUrl ? "" : "without-photo"} ${restaurant.featured ? "featured" : ""}`}
+            href={`/restaurants/${restaurant.slug}`}
+            key={restaurant.id}
+          >
             {restaurant.photoUrl ? (
               <img className="restaurant-card-photo" src={restaurant.photoUrl} alt={`${restaurant.name} fotoğrafı`} loading="lazy" />
-            ) : (
-              <div className="restaurant-card-cover" aria-hidden="true">
-                <span>{restaurant.country.slice(0, 2).toLocaleUpperCase("tr")}</span>
-              </div>
-            )}
+            ) : null}
             <div className="restaurant-card-head">
               <span className={`grade-badge grade-${restaurant.grade.toLocaleLowerCase("tr")}`}>Grade {restaurant.grade}</span>
               {restaurant.featured ? <span className="feature-badge">Öne çıkan</span> : null}
