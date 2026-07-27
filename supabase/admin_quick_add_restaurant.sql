@@ -137,7 +137,10 @@ begin
         email = coalesce(nullif(trim(next_email), ''), email),
         opening_hours = coalesce(nullif(trim(next_opening_hours), ''), opening_hours),
         google_place_id = coalesce(nullif(trim(next_google_place_id), ''), google_place_id),
-        price_level = least(greatest(coalesce(next_price_level, price_level, 2), 1), 4),
+        price_level = case
+          when next_price_level between 1 and 4 then next_price_level
+          else price_level
+        end,
         halal_grade = next_halal_grade::halal_grade,
         status = 'published',
         is_featured = coalesce(next_is_featured, is_featured, false),
@@ -183,7 +186,10 @@ begin
     nullif(trim(next_email), ''),
     nullif(trim(next_opening_hours), ''),
     nullif(trim(next_google_place_id), ''),
-    least(greatest(coalesce(next_price_level, 2), 1), 4),
+    case
+      when next_price_level between 1 and 4 then next_price_level
+      else null
+    end,
     next_halal_grade::halal_grade,
     'published',
     'free',

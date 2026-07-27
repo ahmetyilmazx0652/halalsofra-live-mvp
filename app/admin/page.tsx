@@ -304,6 +304,11 @@ function cleanText(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function cleanPriceLevel(value: FormDataEntryValue | null) {
+  const priceLevel = Number(cleanText(value));
+  return Number.isInteger(priceLevel) && priceLevel >= 1 && priceLevel <= 4 ? priceLevel : null;
+}
+
 function slugify(value: string) {
   return value
     .toLocaleLowerCase("tr")
@@ -510,6 +515,7 @@ async function createPublishedRestaurant(formData: FormData) {
   const cityId = cleanText(formData.get("city_id"));
   const address = cleanText(formData.get("address"));
   const halalGrade = cleanText(formData.get("halal_grade")) || "B";
+  const priceLevel = cleanPriceLevel(formData.get("price_level"));
 
   if (!name || !cityId || !address) {
     redirect("/admin?error=quick-add-missing");
@@ -529,7 +535,7 @@ async function createPublishedRestaurant(formData: FormData) {
     next_description: cleanText(formData.get("description")),
     next_cuisine: cleanText(formData.get("cuisine")) || "turkish",
     next_halal_grade: halalGrade,
-    next_price_level: 2,
+    next_price_level: priceLevel,
     next_google_place_id: cleanText(formData.get("google_place_id")),
     next_alcohol_free: formData.get("alcohol_free") === "on",
     next_prayer_room: formData.get("prayer_room") === "on",
@@ -622,7 +628,7 @@ async function bulkCreatePublishedRestaurants(formData: FormData) {
       next_description: row.description,
       next_cuisine: row.cuisine || "turkish",
       next_halal_grade: row.grade,
-      next_price_level: 2,
+      next_price_level: null,
       next_google_place_id: row.googlePlaceId,
       next_alcohol_free: formData.get("bulk_alcohol_free") === "on",
       next_prayer_room: false,
@@ -1073,6 +1079,13 @@ export default async function AdminPage({
               <option value="A">Grade A</option>
               <option value="B">Grade B</option>
               <option value="C">Grade C</option>
+            </select>
+            <select name="price_level" defaultValue="">
+              <option value="">Kişi başı tahmin yok</option>
+              <option value="1">Kişi başı 10-15 €</option>
+              <option value="2">Kişi başı 15-25 €</option>
+              <option value="3">Kişi başı 25-40 €</option>
+              <option value="4">Kişi başı 40 €+</option>
             </select>
           </div>
           <textarea name="description" placeholder="Kısa açıklama" />

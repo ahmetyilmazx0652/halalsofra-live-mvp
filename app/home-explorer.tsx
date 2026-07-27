@@ -278,6 +278,7 @@ export function HomeExplorer({
             <div className="restaurant-meta">
               {restaurant.rating ? <span>★ {restaurant.rating}</span> : null}
               <span>{restaurant.cuisine}</span>
+              {restaurant.priceEstimate ? <span>{restaurant.priceEstimate}</span> : null}
             </div>
             <div className="card-signals" aria-label={`${restaurant.name} öne çıkan bilgiler`}>
               {restaurant.hasCertificate ? <span>Sertifikalı</span> : null}

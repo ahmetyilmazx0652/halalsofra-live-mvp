@@ -53,6 +53,11 @@ function cleanPrice(value: FormDataEntryValue | null) {
   return Number.isFinite(price) && price > 0 ? price : null;
 }
 
+function cleanPriceLevel(value: FormDataEntryValue | null) {
+  const priceLevel = Number(cleanText(value));
+  return Number.isInteger(priceLevel) && priceLevel >= 1 && priceLevel <= 4 ? priceLevel : null;
+}
+
 async function submitRestaurant(formData: FormData) {
   "use server";
 
@@ -99,6 +104,7 @@ async function submitRestaurant(formData: FormData) {
   }
 
   const slug = `${slugify(name)}-${Date.now()}`;
+  const priceLevel = cleanPriceLevel(formData.get("price_level"));
   const insertResult = await supabase.from("restaurants").insert({
     country_id: cityResult.data.country_id,
     city_id: cityResult.data.id,
@@ -113,7 +119,7 @@ async function submitRestaurant(formData: FormData) {
     instagram: cleanText(formData.get("instagram")),
     opening_hours: cleanText(formData.get("opening_hours")),
     google_place_id: cleanText(formData.get("google_place_id")),
-    price_level: 2,
+    price_level: priceLevel,
     halal_grade: cleanText(formData.get("halal_grade")) || "B",
     status: "pending",
     subscription_plan: cleanText(formData.get("subscription_plan")) || "free",
@@ -384,6 +390,13 @@ export default async function OwnerPage({
               <option value="A">Grade A</option>
               <option value="B">Grade B</option>
               <option value="C">Grade C</option>
+            </select>
+            <select name="price_level" defaultValue="">
+              <option value="">Kişi başı tahmin yok</option>
+              <option value="1">Kişi başı 10-15 €</option>
+              <option value="2">Kişi başı 15-25 €</option>
+              <option value="3">Kişi başı 25-40 €</option>
+              <option value="4">Kişi başı 40 €+</option>
             </select>
             <select name="subscription_plan" defaultValue={selectedPlan}>
               {plans.map((plan) => (

@@ -17,6 +17,7 @@ export type HomeRestaurant = {
   city: string;
   cuisine: string;
   grade: string;
+  priceEstimate: string | null;
   rating: number | null;
   address: string;
   featured: boolean;
@@ -51,6 +52,7 @@ function demoHomeData(): HomeData {
       slug: restaurant.id,
       photoUrl: null,
       rating: restaurant.rating,
+      priceEstimate: null,
       alcoholFree: restaurant.grade === "A",
       prayerRoom: false,
       familyFriendly: false,
@@ -69,6 +71,17 @@ function demoHomeData(): HomeData {
   };
 }
 
+function priceEstimateLabel(level: number | null) {
+  if (!level) return null;
+  const labels: Record<number, string> = {
+    1: "Kişi başı 10-15 €",
+    2: "Kişi başı 15-25 €",
+    3: "Kişi başı 25-40 €",
+    4: "Kişi başı 40 €+"
+  };
+  return labels[level] ?? null;
+}
+
 export async function getHomeData(): Promise<HomeData> {
   if (!hasSupabaseConfig || !supabase) {
     return demoHomeData();
@@ -79,7 +92,7 @@ export async function getHomeData(): Promise<HomeData> {
     supabase.from("cities").select("id,country_id,name").order("name"),
     supabase
       .from("restaurants")
-      .select("id,slug,name,cuisine,address,halal_grade,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,country_id,city_id,certificates(id,status),menu_categories(id,menu_items(id,is_available)),reviews(id,status),restaurant_photos(storage_path,sort_order)")
+      .select("id,slug,name,cuisine,address,price_level,halal_grade,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,country_id,city_id,certificates(id,status),menu_categories(id,menu_items(id,is_available)),reviews(id,status),restaurant_photos(storage_path,sort_order)")
       .eq("status", "published")
       .order("is_featured", { ascending: false })
       .order("created_at", { ascending: false })
@@ -137,6 +150,7 @@ export async function getHomeData(): Promise<HomeData> {
       city: cityNameById.get(restaurant.city_id) ?? "Bilinmiyor",
       cuisine: restaurant.cuisine ?? "Restoran",
       grade: restaurant.halal_grade ?? "B",
+      priceEstimate: priceEstimateLabel(restaurant.price_level),
       rating: null,
       address: restaurant.address,
       featured: Boolean(restaurant.is_featured),

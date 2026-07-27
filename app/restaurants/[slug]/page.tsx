@@ -44,6 +44,17 @@ function formatMenuPrice(price: number | string | null, currency: string | null)
   }).format(numericPrice);
 }
 
+function priceEstimateLabel(level: number | null) {
+  if (!level) return null;
+  const labels: Record<number, string> = {
+    1: "10-15 €",
+    2: "15-25 €",
+    3: "25-40 €",
+    4: "40 €+"
+  };
+  return labels[level] ?? null;
+}
+
 function formatDate(value: string | null) {
   if (!value) return null;
   return new Intl.DateTimeFormat("tr-TR", {
@@ -218,7 +229,7 @@ export default async function RestaurantDetailPage({
 
   const result = await supabase
     .from("restaurants")
-    .select("id,name,slug,cuisine,description,address,phone,email,website,instagram,opening_hours,google_place_id,lat,lng,halal_grade,alcohol_free,prayer_room,family_friendly,subscription_plan,cities(name),countries(name,flag)")
+    .select("id,name,slug,cuisine,description,address,phone,email,website,instagram,opening_hours,google_place_id,lat,lng,price_level,halal_grade,alcohol_free,prayer_room,family_friendly,subscription_plan,cities(name),countries(name,flag)")
     .eq("slug", params.slug)
     .eq("status", "published")
     .single();
@@ -302,6 +313,7 @@ export default async function RestaurantDetailPage({
     ? `/?country=${encodeURIComponent(country.name)}&city=${encodeURIComponent(city.name)}`
     : countryHref;
   const openingHourLines = formatOpeningHours(restaurant.opening_hours);
+  const priceEstimate = priceEstimateLabel(restaurant.price_level);
 
   return (
     <main className="page">
@@ -378,6 +390,7 @@ export default async function RestaurantDetailPage({
               </p>
             ) : null}
             <p><strong>Mutfak</strong><span>{restaurant.cuisine}</span></p>
+            {priceEstimate ? <p><strong>Kişi başı tahmini</strong><span>{priceEstimate}</span></p> : null}
             {restaurant.phone ? <p><strong>Telefon</strong><span>{restaurant.phone}</span></p> : null}
             {restaurant.email ? <p><strong>E-posta</strong><span>{restaurant.email}</span></p> : null}
             {website ? (
