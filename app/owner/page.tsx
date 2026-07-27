@@ -99,7 +99,6 @@ async function submitRestaurant(formData: FormData) {
   }
 
   const slug = `${slugify(name)}-${Date.now()}`;
-  const priceLevel = Number(cleanText(formData.get("price_level"))) || 2;
   const insertResult = await supabase.from("restaurants").insert({
     country_id: cityResult.data.country_id,
     city_id: cityResult.data.id,
@@ -114,7 +113,7 @@ async function submitRestaurant(formData: FormData) {
     instagram: cleanText(formData.get("instagram")),
     opening_hours: cleanText(formData.get("opening_hours")),
     google_place_id: cleanText(formData.get("google_place_id")),
-    price_level: Math.min(Math.max(priceLevel, 1), 4),
+    price_level: 2,
     halal_grade: cleanText(formData.get("halal_grade")) || "B",
     status: "pending",
     subscription_plan: cleanText(formData.get("subscription_plan")) || "free",
@@ -385,12 +384,6 @@ export default async function OwnerPage({
               <option value="A">Grade A</option>
               <option value="B">Grade B</option>
               <option value="C">Grade C</option>
-            </select>
-            <select name="price_level" defaultValue="2">
-              <option value="1">€ - Ekonomik</option>
-              <option value="2">€€ - Orta</option>
-              <option value="3">€€€ - Pahalı</option>
-              <option value="4">€€€€ - Premium</option>
             </select>
             <select name="subscription_plan" defaultValue={selectedPlan}>
               {plans.map((plan) => (

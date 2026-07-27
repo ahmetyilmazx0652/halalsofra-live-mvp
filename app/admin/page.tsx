@@ -510,7 +510,6 @@ async function createPublishedRestaurant(formData: FormData) {
   const cityId = cleanText(formData.get("city_id"));
   const address = cleanText(formData.get("address"));
   const halalGrade = cleanText(formData.get("halal_grade")) || "B";
-  const priceLevel = Number(cleanText(formData.get("price_level"))) || 2;
 
   if (!name || !cityId || !address) {
     redirect("/admin?error=quick-add-missing");
@@ -530,7 +529,7 @@ async function createPublishedRestaurant(formData: FormData) {
     next_description: cleanText(formData.get("description")),
     next_cuisine: cleanText(formData.get("cuisine")) || "turkish",
     next_halal_grade: halalGrade,
-    next_price_level: Math.min(Math.max(priceLevel, 1), 4),
+    next_price_level: 2,
     next_google_place_id: cleanText(formData.get("google_place_id")),
     next_alcohol_free: formData.get("alcohol_free") === "on",
     next_prayer_room: formData.get("prayer_room") === "on",
@@ -1074,12 +1073,6 @@ export default async function AdminPage({
               <option value="A">Grade A</option>
               <option value="B">Grade B</option>
               <option value="C">Grade C</option>
-            </select>
-            <select name="price_level" defaultValue="2">
-              <option value="1">€ - Ekonomik</option>
-              <option value="2">€€ - Orta</option>
-              <option value="3">€€€ - Pahalı</option>
-              <option value="4">€€€€ - Premium</option>
             </select>
           </div>
           <textarea name="description" placeholder="Kısa açıklama" />

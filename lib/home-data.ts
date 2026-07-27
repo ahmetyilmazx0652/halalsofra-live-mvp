@@ -17,7 +17,6 @@ export type HomeRestaurant = {
   city: string;
   cuisine: string;
   grade: string;
-  price: string;
   rating: number | null;
   address: string;
   featured: boolean;
@@ -70,11 +69,6 @@ function demoHomeData(): HomeData {
   };
 }
 
-function priceLabel(level: number | null) {
-  if (!level) return "Fiyat bekleniyor";
-  return "€".repeat(Math.max(1, Math.min(level, 4)));
-}
-
 export async function getHomeData(): Promise<HomeData> {
   if (!hasSupabaseConfig || !supabase) {
     return demoHomeData();
@@ -85,7 +79,7 @@ export async function getHomeData(): Promise<HomeData> {
     supabase.from("cities").select("id,country_id,name").order("name"),
     supabase
       .from("restaurants")
-      .select("id,slug,name,cuisine,address,price_level,halal_grade,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,country_id,city_id,certificates(id,status),menu_categories(id,menu_items(id,is_available)),reviews(id,status),restaurant_photos(storage_path,sort_order)")
+      .select("id,slug,name,cuisine,address,halal_grade,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,country_id,city_id,certificates(id,status),menu_categories(id,menu_items(id,is_available)),reviews(id,status),restaurant_photos(storage_path,sort_order)")
       .eq("status", "published")
       .order("is_featured", { ascending: false })
       .order("created_at", { ascending: false })
@@ -143,7 +137,6 @@ export async function getHomeData(): Promise<HomeData> {
       city: cityNameById.get(restaurant.city_id) ?? "Bilinmiyor",
       cuisine: restaurant.cuisine ?? "Restoran",
       grade: restaurant.halal_grade ?? "B",
-      price: priceLabel(restaurant.price_level),
       rating: null,
       address: restaurant.address,
       featured: Boolean(restaurant.is_featured),
