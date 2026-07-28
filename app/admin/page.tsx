@@ -253,22 +253,6 @@ async function getPublishedRestaurants(query?: string, quality: PublishedQuality
     .order("updated_at", { ascending: false })
     .limit(query || quality !== "all" ? 100 : 24);
 
-  console.error("[admin-diagnostics] getPublishedRestaurants", {
-    supabaseHost: (() => {
-      try {
-        return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname;
-      } catch {
-        return null;
-      }
-    })(),
-    hasSupabaseAdminConfig,
-    errorMessage: result.error?.message ?? null,
-    errorCode: result.error?.code ?? null,
-    errorDetails: result.error?.details ?? null,
-    errorHint: result.error?.hint ?? null,
-    dataLength: result.data?.length ?? 0
-  });
-
   if (result.error) return [];
   return (result.data ?? [])
     .map(mapRestaurant)
@@ -285,22 +269,6 @@ async function getArchivedRestaurants() {
     .eq("status", "suspended")
     .order("updated_at", { ascending: false })
     .limit(24);
-
-  console.error("[admin-diagnostics] getArchivedRestaurants", {
-    supabaseHost: (() => {
-      try {
-        return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname;
-      } catch {
-        return null;
-      }
-    })(),
-    hasSupabaseAdminConfig,
-    errorMessage: result.error?.message ?? null,
-    errorCode: result.error?.code ?? null,
-    errorDetails: result.error?.details ?? null,
-    errorHint: result.error?.hint ?? null,
-    dataLength: result.data?.length ?? 0
-  });
 
   if (result.error) return [];
   return (result.data ?? []).map(mapRestaurant);
