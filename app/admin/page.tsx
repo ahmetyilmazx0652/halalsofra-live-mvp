@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cuisineLabel, cuisineOptions } from "@/lib/cuisine";
-import { hasSupabaseConfig, supabase } from "@/lib/supabase";
+import { hasSupabaseAdminConfig, supabaseAdmin } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -148,9 +148,10 @@ function mapReview(item: any): AdminReview {
 }
 
 async function getPendingRestaurants() {
-  if (!hasSupabaseConfig || !supabase) return [];
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return [];
 
-  const result = await supabase
+  const result = await supabaseAdmin
     .from("restaurants")
     .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order)")
     .eq("status", "pending")
@@ -161,9 +162,10 @@ async function getPendingRestaurants() {
 }
 
 async function getAdminCities() {
-  if (!hasSupabaseConfig || !supabase) return [];
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return [];
 
-  const result = await supabase
+  const result = await supabaseAdmin
     .from("cities")
     .select("id,name,countries(name,flag)")
     .order("name");
@@ -179,9 +181,10 @@ async function getAdminCities() {
 }
 
 async function getAdminCountries() {
-  if (!hasSupabaseConfig || !supabase) return [];
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return [];
 
-  const result = await supabase
+  const result = await supabaseAdmin
     .from("countries")
     .select("id,name,flag")
     .order("name");
@@ -196,9 +199,10 @@ async function getAdminCountries() {
 }
 
 async function getPendingReviews() {
-  if (!hasSupabaseConfig || !supabase) return [];
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return [];
 
-  const result = await supabase
+  const result = await supabaseAdmin
     .from("reviews")
     .select("id,author_name,rating,halal_rating,food_rating,body,created_at,restaurants(name,slug)")
     .eq("status", "pending")
@@ -210,9 +214,10 @@ async function getPendingReviews() {
 }
 
 async function getApprovedReviews() {
-  if (!hasSupabaseConfig || !supabase) return [];
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return [];
 
-  const result = await supabase
+  const result = await supabaseAdmin
     .from("reviews")
     .select("id,author_name,rating,halal_rating,food_rating,body,owner_response,created_at,restaurants(name,slug)")
     .eq("status", "approved")
@@ -232,9 +237,10 @@ function matchesQualityFilter(item: AdminRestaurant, quality: PublishedQualityFi
 }
 
 async function getPublishedRestaurants(query?: string, quality: PublishedQualityFilter = "all") {
-  if (!hasSupabaseConfig || !supabase) return [];
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return [];
 
-  let request = supabase
+  let request = supabaseAdmin
     .from("restaurants")
     .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order)")
     .eq("status", "published");
@@ -254,9 +260,10 @@ async function getPublishedRestaurants(query?: string, quality: PublishedQuality
 }
 
 async function getArchivedRestaurants() {
-  if (!hasSupabaseConfig || !supabase) return [];
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return [];
 
-  const result = await supabase
+  const result = await supabaseAdmin
     .from("restaurants")
     .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order)")
     .eq("status", "suspended")
@@ -271,10 +278,11 @@ async function countRows(
   table: "restaurants" | "reviews",
   buildQuery: (request: any) => any
 ) {
-  if (!hasSupabaseConfig || !supabase) return 0;
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return 0;
 
   const result = await buildQuery(
-    supabase.from(table).select("id", { count: "exact", head: true })
+    supabaseAdmin.from(table).select("id", { count: "exact", head: true })
   );
 
   if (result.error) return 0;
@@ -282,7 +290,8 @@ async function countRows(
 }
 
 async function getAdminMetrics(): Promise<AdminMetrics> {
-  if (!hasSupabaseConfig || !supabase) {
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     return {
       pendingRestaurants: 0,
       publishedRestaurants: 0,
@@ -531,7 +540,7 @@ async function createPublishedRestaurant(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -548,7 +557,7 @@ async function createPublishedRestaurant(formData: FormData) {
     redirect("/admin?error=grade");
   }
 
-  const result = await supabase.rpc("admin_create_published_restaurant", {
+  const result = await supabaseAdmin.rpc("admin_create_published_restaurant", {
     next_name: name,
     next_slug: `${slugify(name)}-${Date.now()}`,
     next_city_id: cityId,
@@ -581,7 +590,7 @@ async function createCity(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config#city-add");
   }
 
@@ -594,7 +603,7 @@ async function createCity(formData: FormData) {
     redirect("/admin?error=city-missing#city-add");
   }
 
-  const result = await supabase.rpc("admin_create_city", {
+  const result = await supabaseAdmin.rpc("admin_create_city", {
     target_country_id: countryId,
     next_name: cityName,
     next_lat: lat,
@@ -615,7 +624,7 @@ async function bulkCreatePublishedRestaurants(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -634,7 +643,7 @@ async function bulkCreatePublishedRestaurants(formData: FormData) {
     redirect("/admin?error=bulk-too-many#bulk-add");
   }
 
-  const cityResult = await supabase
+  const cityResult = await supabaseAdmin
     .from("cities")
     .select("id,name,countries(name)")
     .order("name");
@@ -675,7 +684,7 @@ async function bulkCreatePublishedRestaurants(formData: FormData) {
       redirect(`/admin?error=${encodeURIComponent(`${index + 1}. satırda şehir bulunamadı: ${row.countryName ? `${row.countryName} / ` : ""}${row.cityName}`)}#bulk-add`);
     }
 
-    const result = await supabase.rpc("admin_create_published_restaurant", {
+    const result = await supabaseAdmin.rpc("admin_create_published_restaurant", {
       next_name: row.name,
       next_slug: `${slugify(row.name)}-${Date.now()}-${index + 1}`,
       next_city_id: cityId,
@@ -711,7 +720,7 @@ async function updatePendingRestaurant(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -728,7 +737,7 @@ async function updatePendingRestaurant(formData: FormData) {
     redirect("/admin?error=grade");
   }
 
-  const result = await supabase.rpc("update_pending_restaurant", {
+  const result = await supabaseAdmin.rpc("update_pending_restaurant", {
     target_restaurant_id: id,
     next_name: cleanText(formData.get("name")),
     next_address: cleanText(formData.get("address")),
@@ -759,7 +768,7 @@ async function updatePublishedRestaurant(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -776,7 +785,7 @@ async function updatePublishedRestaurant(formData: FormData) {
     redirect("/admin?error=grade");
   }
 
-  const result = await supabase.rpc("update_published_restaurant", {
+  const result = await supabaseAdmin.rpc("update_published_restaurant", {
     target_restaurant_id: id,
     next_name: cleanText(formData.get("name")),
     next_address: cleanText(formData.get("address")),
@@ -812,7 +821,7 @@ async function updateRestaurantStatus(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -826,7 +835,7 @@ async function updateRestaurantStatus(formData: FormData) {
     redirect("/admin?error=status");
   }
 
-  const result = await supabase.rpc("review_restaurant", {
+  const result = await supabaseAdmin.rpc("review_restaurant", {
     target_restaurant_id: id,
     next_status: status
   });
@@ -845,7 +854,7 @@ async function archivePublishedRestaurant(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -855,7 +864,7 @@ async function archivePublishedRestaurant(formData: FormData) {
     redirect("/admin?error=missing");
   }
 
-  const result = await supabase.rpc("archive_published_restaurant", {
+  const result = await supabaseAdmin.rpc("archive_published_restaurant", {
     target_restaurant_id: id
   });
 
@@ -873,7 +882,7 @@ async function restoreArchivedRestaurant(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -883,7 +892,7 @@ async function restoreArchivedRestaurant(formData: FormData) {
     redirect("/admin?error=missing");
   }
 
-  const result = await supabase.rpc("restore_archived_restaurant", {
+  const result = await supabaseAdmin.rpc("restore_archived_restaurant", {
     target_restaurant_id: id
   });
 
@@ -901,7 +910,7 @@ async function moderateReview(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -913,7 +922,7 @@ async function moderateReview(formData: FormData) {
     redirect("/admin?error=review-status");
   }
 
-  const result = await supabase.rpc("review_user_review", {
+  const result = await supabaseAdmin.rpc("review_user_review", {
     target_review_id: id,
     next_status: status
   });
@@ -934,7 +943,7 @@ async function respondToReview(formData: FormData) {
 
   requireAdmin();
 
-  if (!hasSupabaseConfig || !supabase) {
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
     redirect("/admin?error=config");
   }
 
@@ -946,7 +955,7 @@ async function respondToReview(formData: FormData) {
     redirect("/admin?error=review-response");
   }
 
-  const result = await supabase.rpc("respond_to_review", {
+  const result = await supabaseAdmin.rpc("respond_to_review", {
     target_review_id: id,
     next_owner_response: response
   });
