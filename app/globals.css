@@ -1293,9 +1293,12 @@ input[type="checkbox"] {
   }
 
   .filter-chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
+    flex-wrap: wrap;
+    overflow-x: visible;
+    width: 100%;
     max-width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
     padding-bottom: 6px;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
