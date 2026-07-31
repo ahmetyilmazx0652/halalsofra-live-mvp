@@ -40,6 +40,7 @@ type AdminRestaurant = {
   status: string;
   cityName: string;
   countryName: string;
+  isCityRequestPending: boolean;
 };
 
 type PublishedQualityFilter = "all" | "missing-location" | "missing-certificate" | "missing-photo" | "missing-menu";
@@ -47,6 +48,7 @@ type PublishedQualityFilter = "all" | "missing-location" | "missing-certificate"
 type AdminCityOption = {
   id: string;
   name: string;
+  country_id: string;
   countryName: string;
   countryFlag: string;
 };
@@ -92,6 +94,25 @@ type BulkRestaurantRow = {
 };
 
 function mapRestaurant(item: any): AdminRestaurant {
+  const resolvedCityName = item.cities?.[0]?.name ?? item.cities?.name ?? null;
+  const pendingCityRequest = (item.city_requests ?? []).find(
+    (request: any) => request.status === "pending"
+  );
+
+  let cityName: string;
+  let isCityRequestPending = false;
+
+  if (resolvedCityName) {
+    cityName = resolvedCityName;
+  } else if (pendingCityRequest?.requested_name) {
+    cityName = pendingCityRequest.requested_region
+      ? `${pendingCityRequest.requested_name} (${pendingCityRequest.requested_region})`
+      : pendingCityRequest.requested_name;
+    isCityRequestPending = true;
+  } else {
+    cityName = "Bilinmiyor";
+  }
+
   return {
     id: item.id,
     slug: item.slug,
@@ -125,8 +146,9 @@ function mapRestaurant(item: any): AdminRestaurant {
     certificateNumber: item.certificates?.[0]?.certificate_number ?? null,
     certificateUrl: item.certificates?.[0]?.storage_path ?? null,
     status: item.status,
-    cityName: item.cities?.[0]?.name ?? item.cities?.name ?? "Bilinmiyor",
-    countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor"
+    cityName,
+    countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor",
+    isCityRequestPending
   };
 }
 
@@ -153,7 +175,7 @@ async function getPendingRestaurants() {
 
   const result = await supabaseAdmin
     .from("restaurants")
-    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order)")
+    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order),city_requests(requested_name,requested_region,status)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -167,7 +189,7 @@ async function getAdminCities() {
 
   const result = await supabaseAdmin
     .from("cities")
-    .select("id,name,countries(name,flag)")
+    .select("id,name,country_id,countries(name,flag)")
     .order("name");
 
   if (result.error) return [];
@@ -175,9 +197,24 @@ async function getAdminCities() {
   return (result.data ?? []).map((city: any): AdminCityOption => ({
     id: city.id,
     name: city.name,
+    country_id: city.country_id,
     countryName: city.countries?.[0]?.name ?? city.countries?.name ?? "Bilinmiyor",
     countryFlag: city.countries?.[0]?.flag ?? city.countries?.flag ?? "🌍"
   }));
+}
+
+async function getPendingCityRequests() {
+  requireAdmin();
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) return [];
+
+  const result = await supabaseAdmin
+    .from("city_requests")
+    .select("id,requested_name,requested_region,status,created_at,countries(id,name,flag),restaurants(id,name,slug)")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
+  if (result.error) return [];
+  return result.data ?? [];
 }
 
 async function getAdminCountries() {
@@ -619,6 +656,99 @@ async function createCity(formData: FormData) {
   redirect("/admin?cityCreated=1#city-add");
 }
 
+async function matchCityRequestToExistingCity(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
+    redirect("/admin?error=config#city-requests");
+  }
+
+  const requestId = cleanText(formData.get("request_id"));
+  const cityId = cleanText(formData.get("city_id"));
+
+  if (!requestId || !cityId) {
+    redirect("/admin?error=missing#city-requests");
+  }
+
+  const result = await supabaseAdmin.rpc("resolve_city_request_with_existing_city", {
+    p_request_id: requestId,
+    p_city_id: cityId
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}#city-requests`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?city-request-resolved=1#city-requests");
+}
+
+async function createCityFromRequest(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
+    redirect("/admin?error=config#city-requests");
+  }
+
+  const requestId = cleanText(formData.get("request_id"));
+
+  if (!requestId) {
+    redirect("/admin?error=missing#city-requests");
+  }
+
+  const lat = cleanCoordinate(formData.get("lat"));
+  const lng = cleanCoordinate(formData.get("lng"));
+
+  // country_id ve requested_name buradan gönderilmiyor — RPC bunları
+  // doğrudan city_requests kaydından okuyor, hidden alanlara güvenmiyor.
+  const result = await supabaseAdmin.rpc("resolve_city_request_with_new_city", {
+    p_request_id: requestId,
+    p_lat: lat,
+    p_lng: lng
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}#city-requests`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?city-request-resolved=1#city-requests");
+}
+
+async function rejectCityRequestAction(formData: FormData) {
+  "use server";
+
+  requireAdmin();
+
+  if (!hasSupabaseAdminConfig || !supabaseAdmin) {
+    redirect("/admin?error=config#city-requests");
+  }
+
+  const requestId = cleanText(formData.get("request_id"));
+
+  if (!requestId) {
+    redirect("/admin?error=missing#city-requests");
+  }
+
+  const result = await supabaseAdmin.rpc("reject_city_request", {
+    p_request_id: requestId
+  });
+
+  if (result.error) {
+    redirect(`/admin?error=${encodeURIComponent(result.error.message)}#city-requests`);
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/admin?city-request-resolved=1#city-requests");
+}
+
 async function bulkCreatePublishedRestaurants(formData: FormData) {
   "use server";
 
@@ -1011,7 +1141,7 @@ export default async function AdminPage({
 
   const publishedQuery = cleanSearch(cleanText(searchParams?.q ?? ""));
   const publishedQuality = cleanPublishedQualityFilter(searchParams?.quality);
-  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants, adminCities, adminCountries, adminMetrics] = await Promise.all([
+  const [pendingRestaurants, pendingReviews, approvedReviews, publishedRestaurants, archivedRestaurants, adminCities, adminCountries, adminMetrics, pendingCityRequests] = await Promise.all([
     getPendingRestaurants(),
     getPendingReviews(),
     getApprovedReviews(),
@@ -1019,7 +1149,8 @@ export default async function AdminPage({
     getArchivedRestaurants(),
     getAdminCities(),
     getAdminCountries(),
-    getAdminMetrics()
+    getAdminMetrics(),
+    getPendingCityRequests()
   ]);
 
   return (
@@ -1120,6 +1251,52 @@ export default async function AdminPage({
           </div>
           <button className="button primary" type="submit">Şehri Ekle</button>
         </form>
+      </section>
+
+      <section className="panel" id="city-requests" style={{ marginTop: 16 }}>
+        <span className="pill">Şehir Talepleri</span>
+        <h2>Bekleyen şehir talepleri ({pendingCityRequests.length})</h2>
+        <p className="muted">
+          Owner formunda "Şehrim listede yok" seçilince oluşan talepler. Mevcut bir şehirle eşleştirin ya da yeni şehir olarak oluşturun.
+        </p>
+        {pendingCityRequests.length === 0 ? (
+          <p className="muted">Bekleyen şehir talebi yok.</p>
+        ) : (
+          pendingCityRequests.map((request: any) => (
+            <article key={request.id} className="card" style={{ marginTop: 12 }}>
+              <p>
+                <strong>{request.requested_name}</strong>
+                {request.requested_region ? ` (${request.requested_region})` : ""}
+              </p>
+              <p className="muted">
+                {request.countries?.flag} {request.countries?.name} · Restoran: {request.restaurants?.name ?? "—"}
+              </p>
+              <form action={matchCityRequestToExistingCity} className="form-grid">
+                <input type="hidden" name="request_id" value={request.id} />
+                <select name="city_id" required>
+                  <option value="">Mevcut şehirle eşleştir</option>
+                  {adminCities
+                    .filter((city) => city.country_id === request.countries?.id)
+                    .map((city) => (
+                      <option key={city.id} value={city.id}>{city.name}</option>
+                    ))}
+                </select>
+                <button className="button primary">Eşleştir</button>
+              </form>
+              <form action={createCityFromRequest} className="form-grid" style={{ marginTop: 8 }}>
+                <input type="hidden" name="request_id" value={request.id} />
+                <p className="muted">Yeni şehir: <strong>{request.requested_name}</strong> ({request.countries?.name})</p>
+                <input name="lat" inputMode="decimal" placeholder="Enlem (opsiyonel)" />
+                <input name="lng" inputMode="decimal" placeholder="Boylam (opsiyonel)" />
+                <button className="button">Yeni Şehir Olarak Oluştur</button>
+              </form>
+              <form action={rejectCityRequestAction} style={{ marginTop: 8 }}>
+                <input type="hidden" name="request_id" value={request.id} />
+                <button className="button">Reddet</button>
+              </form>
+            </article>
+          ))
+        )}
       </section>
 
       <section className="admin-command" aria-label="Yayın hazırlık kontrolü">
@@ -1225,7 +1402,10 @@ export default async function AdminPage({
             </div>
             {item.photoUrl ? <img className="admin-thumb" src={item.photoUrl} alt={`${item.name} fotoğrafı`} loading="lazy" /> : null}
             <h3>{item.name}</h3>
-            <p className="muted">{item.countryName} · {item.cityName}</p>
+            <p className="muted">
+              {item.countryName} · {item.cityName}
+              {item.isCityRequestPending ? <span className="pill" style={{ marginLeft: 6 }}>Şehir talebi</span> : null}
+            </p>
             <p>{item.address}</p>
             <div className="meta-list">
               <span>{item.cuisine}</span>

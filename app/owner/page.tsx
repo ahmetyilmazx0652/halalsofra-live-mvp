@@ -2,6 +2,7 @@ import { plans } from "@/lib/plans";
 import { redirect } from "next/navigation";
 import { cuisineOptions } from "@/lib/cuisine";
 import { hasSupabaseConfig, supabase } from "@/lib/supabase";
+import OwnerCityPicker from "@/app/owner-city-picker";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -69,73 +70,54 @@ async function submitRestaurant(formData: FormData) {
   const name = cleanText(formData.get("name"));
   const cityId = cleanText(formData.get("city_id"));
   const address = cleanText(formData.get("address"));
+  const isOtherCity = cityId === "__other__";
+  const requestedCountryId = cleanText(formData.get("requested_country_id"));
+  const requestedCityName = cleanText(formData.get("requested_city_name"));
+  const requestedRegion = cleanText(formData.get("requested_region"));
 
   if (!name || !cityId || !address) {
     redirect("/owner?error=missing");
   }
 
-  const cityResult = await supabase
-    .from("cities")
-    .select("id,country_id")
-    .eq("id", cityId)
-    .single();
-
-  if (cityResult.error || !cityResult.data) {
-    redirect("/owner?error=city");
-  }
-
-  const duplicateResult = await supabase
-    .from("restaurants")
-    .select("id,name")
-    .eq("city_id", cityResult.data.id)
-    .in("status", ["pending", "published"])
-    .limit(200);
-
-  if (duplicateResult.error) {
-    redirect(`/owner?error=${encodeURIComponent(duplicateResult.error.message)}`);
-  }
-
-  const nextRestaurantKey = normalizeRestaurantKey(name);
-  const hasDuplicate = (duplicateResult.data ?? []).some(
-    (restaurant) => normalizeRestaurantKey(restaurant.name ?? "") === nextRestaurantKey
-  );
-
-  if (hasDuplicate) {
-    redirect("/owner?duplicate=1#restaurant-application");
+  if (isOtherCity && (!requestedCountryId || !requestedCityName)) {
+    redirect("/owner?error=missing-city#restaurant-application");
   }
 
   const slug = `${slugify(name)}-${Date.now()}`;
   const priceLevel = cleanPriceLevel(formData.get("price_level"));
-  const insertResult = await supabase.from("restaurants").insert({
-    country_id: cityResult.data.country_id,
-    city_id: cityResult.data.id,
-    name,
-    slug,
-    cuisine: cleanText(formData.get("cuisine")) || "restaurant",
-    description: cleanText(formData.get("description")),
-    address,
-    phone: cleanText(formData.get("phone")),
-    email: cleanText(formData.get("email")),
-    website: cleanText(formData.get("website")),
-    instagram: cleanText(formData.get("instagram")),
-    opening_hours: cleanText(formData.get("opening_hours")),
-    google_place_id: cleanText(formData.get("google_place_id")),
-    price_level: priceLevel,
-    halal_grade: cleanText(formData.get("halal_grade")) || "B",
-    status: "pending",
-    subscription_plan: cleanText(formData.get("subscription_plan")) || "free",
-    alcohol_free: formData.get("alcohol_free") === "on",
-    prayer_room: formData.get("prayer_room") === "on",
-    family_friendly: formData.get("family_friendly") === "on"
-  }).select("id").single();
 
-  if (insertResult.error) {
-    if (insertResult.error.message.includes("DUPLICATE_RESTAURANT")) {
+  const rpcResult = await supabase.rpc("submit_restaurant_application", {
+    p_name: name,
+    p_slug: slug,
+    p_address: address,
+    p_city_id: isOtherCity ? null : cityId,
+    p_requested_country_id: isOtherCity ? requestedCountryId : null,
+    p_requested_city_name: isOtherCity ? requestedCityName : null,
+    p_requested_region: isOtherCity ? requestedRegion || null : null,
+    p_cuisine: cleanText(formData.get("cuisine")) || "restaurant",
+    p_description: cleanText(formData.get("description")),
+    p_phone: cleanText(formData.get("phone")),
+    p_email: cleanText(formData.get("email")),
+    p_website: cleanText(formData.get("website")),
+    p_instagram: cleanText(formData.get("instagram")),
+    p_opening_hours: cleanText(formData.get("opening_hours")),
+    p_google_place_id: cleanText(formData.get("google_place_id")),
+    p_price_level: priceLevel,
+    p_halal_grade: cleanText(formData.get("halal_grade")) || "B",
+    p_alcohol_free: formData.get("alcohol_free") === "on",
+    p_prayer_room: formData.get("prayer_room") === "on",
+    p_family_friendly: formData.get("family_friendly") === "on"
+  });
+
+  if (rpcResult.error || !rpcResult.data) {
+    if (rpcResult.error?.message.includes("DUPLICATE_RESTAURANT")) {
       redirect("/owner?duplicate=1#restaurant-application");
     }
 
-    redirect(`/owner?error=${encodeURIComponent(insertResult.error.message)}`);
+    redirect(`/owner?error=${encodeURIComponent(rpcResult.error?.message ?? "unknown")}`);
   }
+
+  const newRestaurantId = rpcResult.data as string;
 
   const menuItems = [1, 2, 3]
     .map((index) => ({
@@ -149,7 +131,7 @@ async function submitRestaurant(formData: FormData) {
     const categoryResult = await supabase
       .from("menu_categories")
       .insert({
-        restaurant_id: insertResult.data.id,
+        restaurant_id: newRestaurantId,
         name: cleanText(formData.get("menu_category")) || "Popüler",
         sort_order: 0
       })
@@ -183,7 +165,7 @@ async function submitRestaurant(formData: FormData) {
   if (photoUrls.length > 0) {
     const photoResult = await supabase.from("restaurant_photos").insert(
       photoUrls.map((url, index) => ({
-        restaurant_id: insertResult.data.id,
+        restaurant_id: newRestaurantId,
         storage_path: url,
         alt_text: `${name} fotoğrafı ${index + 1}`,
         sort_order: index
@@ -201,7 +183,7 @@ async function submitRestaurant(formData: FormData) {
 
   if (certificateBody || certificateUrl || certificateNumber) {
     const certificateResult = await supabase.from("certificates").insert({
-      restaurant_id: insertResult.data.id,
+      restaurant_id: newRestaurantId,
       body: certificateBody || "İşletme beyanı",
       certificate_number: certificateNumber,
       valid_from: cleanText(formData.get("certificate_valid_from")) || null,
@@ -236,6 +218,21 @@ async function getCities() {
   }));
 }
 
+async function getCountries() {
+  if (!hasSupabaseConfig || !supabase) return [];
+
+  const result = await supabase
+    .from("countries")
+    .select("id,name,flag")
+    .order("name");
+
+  if (result.error) return [];
+  return (result.data ?? []).map((country: any) => ({
+    id: country.id,
+    label: `${country.flag ?? ""} ${country.name}`.trim()
+  }));
+}
+
 function groupCitiesByCountry(cities: CityOption[]): CityGroup[] {
   const groups = new Map<string, CityGroup>();
 
@@ -261,10 +258,8 @@ export default async function OwnerPage({
 }) {
   const cities = await getCities();
   const cityGroups = groupCitiesByCountry(cities);
+  const countryOptions = await getCountries();
   const submitted = searchParams?.submitted === "1";
-  const selectedPlan = plans.some((plan) => plan.id === searchParams?.plan)
-    ? searchParams?.plan
-    : "free";
 
   return (
     <main className="page">
@@ -278,21 +273,28 @@ export default async function OwnerPage({
 
       <section className="plans" style={{ marginTop: 16 }}>
         {plans.map((plan) => (
-          <article className={`plan ${plan.recommended ? "recommended" : ""} ${selectedPlan === plan.id ? "selected" : ""}`} key={plan.id}>
+          <article className={`plan ${plan.recommended ? "recommended" : ""}`} key={plan.id} aria-disabled="true">
             {plan.recommended ? <span className="pill">Önerilen</span> : null}
-            {selectedPlan === plan.id ? <span className="pill">Seçili</span> : null}
+            <span className="pill muted">Yakında</span>
             <h3>{plan.name}</h3>
             <h2>{plan.price}<span className="muted" style={{ fontSize: 14 }}>/ay</span></h2>
             <p className="muted">{plan.description}</p>
             {plan.features.map((feature) => (
               <p key={feature}>✓ {feature}</p>
             ))}
-            <a className="button primary" style={{ width: "100%", textAlign: "center" }} href={`/owner?plan=${plan.id}#restaurant-application`}>
-              Paketi Seç
-            </a>
+            <span
+              className="button"
+              style={{ width: "100%", textAlign: "center", cursor: "not-allowed", opacity: 0.6 }}
+              aria-disabled="true"
+            >
+              Yakında kullanılabilir
+            </span>
           </article>
         ))}
       </section>
+      <p className="muted" style={{ marginTop: 8 }}>
+        Ücretli paketler şu anda aktif değil. Tüm başvurular ücretsiz (free) plan ile oluşturulur.
+      </p>
 
       <section className="panel" id="restaurant-application" style={{ marginTop: 16 }}>
         <h2>Restoran Başvurusu</h2>
@@ -365,18 +367,7 @@ export default async function OwnerPage({
             <input name="website" placeholder="Web sitesi, örn. halalsofra.com (opsiyonel)" />
             <input name="instagram" placeholder="Instagram, örn. @halalsofra" />
             <input name="opening_hours" placeholder="Çalışma saatleri, örn. Her gün 11:00-22:00" />
-            <select name="city_id" required>
-              <option value="">Ülke / şehir seç (zorunlu)</option>
-              {cityGroups.map((group) => (
-                <optgroup key={group.label} label={group.label}>
-                  {group.cities.map((city) => (
-                    <option key={city.id} value={city.id}>
-                      {city.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            <OwnerCityPicker cityGroups={cityGroups} countryOptions={countryOptions} />
             <input name="address" placeholder="Tam adres (zorunlu)" required />
             <input name="google_place_id" placeholder="Google Place ID (opsiyonel, bilmiyorsanız boş bırakın)" />
             <select name="cuisine" defaultValue="restaurant">
@@ -396,11 +387,10 @@ export default async function OwnerPage({
               <option value="3">Kişi başı 25-40 €</option>
               <option value="4">Kişi başı 40 €+</option>
             </select>
-            <select name="subscription_plan" defaultValue={selectedPlan}>
-              {plans.map((plan) => (
-                <option key={plan.id} value={plan.id}>{plan.name}</option>
-              ))}
-            </select>
+            <div className="plan-placeholder" aria-disabled="true" title="Ücretli paketler yakında aktif olacak">
+              <span>Paket: Ücretsiz</span>
+              <small className="muted">Ücretli paketler yakında</small>
+            </div>
           </div>
           <textarea name="description" style={{ marginTop: 12 }} placeholder="Kısa açıklama (opsiyonel)" />
           <details className="optional-section">
