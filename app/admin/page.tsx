@@ -40,6 +40,7 @@ type AdminRestaurant = {
   status: string;
   cityName: string;
   countryName: string;
+  isCityRequestPending: boolean;
 };
 
 type PublishedQualityFilter = "all" | "missing-location" | "missing-certificate" | "missing-photo" | "missing-menu";
@@ -93,6 +94,25 @@ type BulkRestaurantRow = {
 };
 
 function mapRestaurant(item: any): AdminRestaurant {
+  const resolvedCityName = item.cities?.[0]?.name ?? item.cities?.name ?? null;
+  const pendingCityRequest = (item.city_requests ?? []).find(
+    (request: any) => request.status === "pending"
+  );
+
+  let cityName: string;
+  let isCityRequestPending = false;
+
+  if (resolvedCityName) {
+    cityName = resolvedCityName;
+  } else if (pendingCityRequest?.requested_name) {
+    cityName = pendingCityRequest.requested_region
+      ? `${pendingCityRequest.requested_name} (${pendingCityRequest.requested_region})`
+      : pendingCityRequest.requested_name;
+    isCityRequestPending = true;
+  } else {
+    cityName = "Bilinmiyor";
+  }
+
   return {
     id: item.id,
     slug: item.slug,
@@ -126,8 +146,9 @@ function mapRestaurant(item: any): AdminRestaurant {
     certificateNumber: item.certificates?.[0]?.certificate_number ?? null,
     certificateUrl: item.certificates?.[0]?.storage_path ?? null,
     status: item.status,
-    cityName: item.cities?.[0]?.name ?? item.cities?.name ?? "Bilinmiyor",
-    countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor"
+    cityName,
+    countryName: item.countries?.[0]?.name ?? item.countries?.name ?? "Bilinmiyor",
+    isCityRequestPending
   };
 }
 
@@ -154,7 +175,7 @@ async function getPendingRestaurants() {
 
   const result = await supabaseAdmin
     .from("restaurants")
-    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order)")
+    .select("id,slug,name,country_id,city_id,address,phone,email,opening_hours,cuisine,description,halal_grade,subscription_plan,is_featured,alcohol_free,prayer_room,family_friendly,google_place_id,lat,lng,status,cities(name),countries(name),certificates(id,status,body,certificate_number,storage_path),menu_categories(id,menu_items(id,is_available)),restaurant_photos(storage_path,sort_order),city_requests(requested_name,requested_region,status)")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -1381,7 +1402,10 @@ export default async function AdminPage({
             </div>
             {item.photoUrl ? <img className="admin-thumb" src={item.photoUrl} alt={`${item.name} fotoğrafı`} loading="lazy" /> : null}
             <h3>{item.name}</h3>
-            <p className="muted">{item.countryName} · {item.cityName}</p>
+            <p className="muted">
+              {item.countryName} · {item.cityName}
+              {item.isCityRequestPending ? <span className="pill" style={{ marginLeft: 6 }}>Şehir talebi</span> : null}
+            </p>
             <p>{item.address}</p>
             <div className="meta-list">
               <span>{item.cuisine}</span>
